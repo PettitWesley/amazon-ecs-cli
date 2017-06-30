@@ -30,8 +30,8 @@ import (
 const (
 	clusterName             = "defaultCluster"
 	region                  = "us-east-1"
-	awsAccessKey            = "AKID"
-	awsSecretKey            = "SKID"
+	awsTestAccessKey        = "AKID"
+	awsTestSecretKey        = "SKID"
 	credentialProviderCount = 2
 
 	customProfileName  = "customProfile"
@@ -74,8 +74,8 @@ const (
 func TestRegionWhenUsingEnvVariable(t *testing.T) {
 	// defaults
 	ecsConfig := NewCliConfig(clusterName)
-	ecsConfig.AwsAccessKey = awsAccessKey
-	ecsConfig.AwsSecretKey = awsSecretKey
+	ecsConfig.AwsAccessKey = awsTestAccessKey
+	ecsConfig.AwsSecretKey = awsTestSecretKey
 
 	// set variable for test
 	os.Setenv("AWS_REGION", envAwsRegion)

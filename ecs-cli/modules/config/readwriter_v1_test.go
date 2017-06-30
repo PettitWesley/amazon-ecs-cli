@@ -74,7 +74,7 @@ func TestConfigPermissions(t *testing.T) {
 	// Create config file and confirm it has expected initial permissions
 	saveConfigWithCluster(t, parser, dest)
 
-	path := yamlConfigPath(dest)
+	path := clusterConfigPath(dest)
 	confirmConfigMode(t, path, configFileMode)
 
 	// Now set the config mode to something bad
@@ -252,7 +252,7 @@ func TestMissingPrefixesNewYamlFormat(t *testing.T) {
 
 	defer os.RemoveAll(dest.Path)
 
-	err = ioutil.WriteFile(dest.Path+"/"+yamlConfigFileName, []byte(configContentsNoPrefixes), *dest.Mode)
+	err = ioutil.WriteFile(dest.Path+"/"+clusterConfigFileName, []byte(configContentsNoPrefixes), *dest.Mode)
 	assert.NoError(t, err)
 
 	parser := setupParser(t, dest, true)
@@ -285,7 +285,7 @@ func TestPrefixesDefaultNewYamlFormat(t *testing.T) {
 
 	defer os.RemoveAll(dest.Path)
 
-	err = ioutil.WriteFile(yamlConfigPath(dest), []byte(configContents), *dest.Mode)
+	err = ioutil.WriteFile(clusterConfigPath(dest), []byte(configContents), *dest.Mode)
 	assert.NoError(t, err)
 
 	parser := setupParser(t, dest, true)

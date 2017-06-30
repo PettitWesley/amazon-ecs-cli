@@ -29,6 +29,10 @@ const (
 	composeProjectNamePrefixKey = "compose-project-name-prefix"
 	composeServiceNamePrefixKey = "compose-service-name-prefix"
 	cfnStackNamePrefixKey       = "cfn-stack-name-prefix"
+	awsAccessKey                = "aws_access_key_id"
+	awsSecretKey                = "aws_secret_access_key"
+	clusterKey                  = "cluster"
+	regionKey                   = "region"
 )
 
 // CliConfig is the top level struct used to map to the yaml config.
