@@ -33,7 +33,6 @@ const (
 
 // CliConfig is the top level struct used to map to the yaml config.
 type CliConfig struct {
-	// TODO Add metadata information like version etc.
 	*SectionKeys `yaml:"v1"`
 }
 
