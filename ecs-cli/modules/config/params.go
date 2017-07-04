@@ -39,7 +39,13 @@ func (p *CliParams) GetCfnStackName() string {
 
 // NewCliParams creates a new ECSParams object from the config file.
 func NewCliParams(context *cli.Context, rdwr ReadWriter) (*CliParams, error) {
-	ecsConfig, configMap, err := rdwr.GetConfig()
+	clusterConfigFlag := context.String(ecscli.ClusterConfigFlag)
+	profileConfigFlag := context.String(ecscli.ProfileConfigFlag)
+	logrus.Warnf("ClusterConfigFlag: %s,  ProfileConfigFlag: %s", clusterConfigFlag, profileConfigFlag)
+
+	ecsConfig, configMap, err := rdwr.GetConfig(clusterConfigFlag, profileConfigFlag)
+	logrus.Warnf("ecsConfig: %s", ecsConfig)
+	logrus.Warnf("configMap: %s", configMap)
 	if err != nil {
 		logrus.Error("Error loading config: ", err)
 		return nil, err
@@ -59,7 +65,8 @@ func NewCliParams(context *cli.Context, rdwr ReadWriter) (*CliParams, error) {
 	// Order of cluster resolution
 	//  1) Inline flag
 	//  2) Environment Variable
-	//  3) ECS Config
+	//  3) ECS Cluster config specified in flag
+	//  3) Default ECS Cluster config
 	if clusterFromEnv := os.Getenv(ecscli.ClusterEnvVar); clusterFromEnv != "" {
 		ecsConfig.Cluster = clusterFromEnv
 	}

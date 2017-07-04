@@ -48,6 +48,18 @@ func configureFlags() []cli.Flag {
 			EnvVar: flags.AwsRegionEnvVar,
 		},
 		cli.StringFlag{
+			Name: flags.ClusterConfigFlag,
+			Usage: fmt.Sprintf(
+				"Specifies the Cluster Configuration to use.",
+			),
+		},
+		cli.StringFlag{
+			Name: flags.ProfileConfigFlag,
+			Usage: fmt.Sprintf(
+				"Specifies the ECS Profile Configuration to use.",
+			),
+		},
+		cli.StringFlag{
 			Name: flags.AccessKeyFlag,
 			Usage: fmt.Sprintf(
 				"Specifies the AWS access key to use. If the AWS_ACCESS_KEY_ID environment variable is set when ecs-cli configure is run, then the AWS access key ID is set to the value of that environment variable.",

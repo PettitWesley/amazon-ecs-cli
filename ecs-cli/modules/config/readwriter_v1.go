@@ -33,7 +33,7 @@ const (
 // ReadWriter interface has methods to read and write ecs-cli config to and from the config file.
 type ReadWriter interface {
 	Save(*CliConfig) error
-	GetConfig() (*CliConfig, map[interface{}]interface{}, error)
+	GetConfig(string, string) (*CliConfig, map[interface{}]interface{}, error)
 }
 
 // YamlReadWriter implments the ReadWriter interfaces. It can be used to save and load
@@ -61,7 +61,7 @@ func NewReadWriter() (*YamlReadWriter, error) {
 }
 
 // GetConfig gets the ecs-cli config object from the config file.
-func (rdwr *YamlReadWriter) GetConfig() (*CliConfig, map[interface{}]interface{}, error) {
+func (rdwr *YamlReadWriter) GetConfig(clusterConfig string, profileConfig string) (*CliConfig, map[interface{}]interface{}, error) {
 	cliConfig := &CliConfig{SectionKeys: new(SectionKeys)}
 	configMap := make(map[interface{}]interface{})
 	// read the raw bytes of the config file
@@ -114,8 +114,9 @@ func (rdwr *YamlReadWriter) GetConfig() (*CliConfig, map[interface{}]interface{}
 			return nil, nil, err
 		}
 
-		processProfileMap("", profileMap, configMap, cliConfig)
-		processClusterMap("", clusterMap, configMap, cliConfig)
+		logrus.Warnf("c: %s, p: %s", clusterConfig, profileConfig)
+		processProfileMap(profileConfig, profileMap, configMap, cliConfig)
+		processClusterMap(clusterConfig, clusterMap, configMap, cliConfig)
 
 	}
 	return cliConfig, configMap, nil
@@ -149,20 +150,21 @@ func processProfileMap(profileKey string, profileMap map[interface{}]interface{}
 
 }
 
-func processClusterMap(clusterKey string, clusterMap map[interface{}]interface{}, configMap map[interface{}]interface{}, cliConfig *CliConfig) error {
-	if clusterKey != "" {
+func processClusterMap(clusterConfigKey string, clusterMap map[interface{}]interface{}, configMap map[interface{}]interface{}, cliConfig *CliConfig) error {
+	if clusterConfigKey == "" {
 		var ok bool
-		clusterKey, ok = clusterMap["default"].(string)
+		clusterConfigKey, ok = clusterMap["default"].(string)
 		if !ok {
 			return errors.New("Format issue with profile config file; expected key not found.")
 		}
 	}
-	cluster, ok := clusterMap["clusters"].(map[interface{}]interface{})[clusterKey].(map[interface{}]interface{})
+	cluster, ok := clusterMap["clusters"].(map[interface{}]interface{})[clusterConfigKey].(map[interface{}]interface{})
 	if !ok {
 		return errors.New("Format issue with profile config file; expected key not found.")
 	}
 
 	configMap[clusterKey] = cluster[clusterKey]
+	logrus.Warnf("Cluster from file: %s", cluster[clusterKey])
 	configMap[regionKey] = cluster[regionKey]
 	cliConfig.Cluster, ok = cluster[clusterKey].(string)
 	if !ok {
