@@ -31,6 +31,8 @@ const (
 	ClusterFlag            = "cluster"
 	ClusterConfigFlag      = "cluster-config"
 	ProfileConfigFlag      = "ecs-profile"
+	ProfileNameFlag        = "profile-name"
+	ConfigNameFlag         = "config-name"
 	ClusterEnvVar          = "ECS_CLUSTER"
 	VerboseFlag            = "verbose"
 

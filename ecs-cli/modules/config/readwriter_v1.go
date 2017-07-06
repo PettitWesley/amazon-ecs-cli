@@ -48,7 +48,6 @@ type ClusterConfiguration struct {
 
 // ReadWriter interface has methods to read and write ecs-cli config to and from the config file.
 type ReadWriter interface {
-	Save(*CliConfig) error
 	SaveProfile(*ProfileConfiguration) error
 	SaveCluster(*ClusterConfiguration) error
 	SetDefaultProfile(string) error
@@ -227,6 +226,50 @@ func processClusterMap(clusterConfigKey string, clusterMap map[interface{}]inter
 
 }
 
+func (rdwr *YamlReadWriter) SetDefaultProfile(profile string) error {
+	profileMap := make(map[interface{}]interface{})
+	profilePath := profileConfigPath(rdwr.destination)
+
+	// read profile file
+	dat, err := ioutil.ReadFile(profilePath)
+	if err != nil {
+		return err
+	}
+	// convert profile yaml to a map
+	if err = yaml.Unmarshal(dat, &profileMap); err != nil {
+		return err
+	}
+
+	profileMap["default"] = profile
+
+	// we must save the entire new config map to the file
+	rdwr.saveToFile(profilePath, profileMap)
+
+	return nil
+}
+
+func (rdwr *YamlReadWriter) SetDefaultCluster(cluster string) error {
+	clusterMap := make(map[interface{}]interface{})
+	clusterPath := clusterConfigPath(rdwr.destination)
+
+	// read profile file
+	dat, err := ioutil.ReadFile(clusterPath)
+	if err != nil {
+		return err
+	}
+	// convert profile yaml to a map
+	if err = yaml.Unmarshal(dat, &clusterMap); err != nil {
+		return err
+	}
+
+	clusterMap["default"] = cluster
+
+	// we must save the entire new config map to the file
+	rdwr.saveToFile(clusterPath, clusterMap)
+
+	return nil
+}
+
 func (rdwr *YamlReadWriter) SaveProfile(profile *ProfileConfiguration) error {
 	profileMap := make(map[interface{}]interface{})
 	profilePath := profileConfigPath(rdwr.destination)
@@ -239,7 +282,7 @@ func (rdwr *YamlReadWriter) SaveProfile(profile *ProfileConfiguration) error {
 	if err != nil {
 		return err
 	}
-	// convert profile yaml to a map (replaces IsKeyPresent functionality)
+	// convert profile yaml to a map
 	if err = yaml.Unmarshal(dat, &profileMap); err != nil {
 		return err
 	}
@@ -278,7 +321,7 @@ func (rdwr *YamlReadWriter) SaveCluster(cluster *ClusterConfiguration) error {
 	if err != nil {
 		return err
 	}
-	// convert profile yaml to a map (replaces IsKeyPresent functionality)
+	// convert profile yaml to a map
 	if err = yaml.Unmarshal(dat, &clusterMap); err != nil {
 		return err
 	}

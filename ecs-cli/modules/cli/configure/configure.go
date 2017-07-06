@@ -22,38 +22,44 @@ import (
 	"github.com/urfave/cli"
 )
 
-// ProfileConfiguration is a simple struct for storing a single profile config
-// this struct is used in the ConfigureProfile callback to save a single profile
-type ProfileConfiguration struct {
-	profileName  string
-	awsAccessKey string
-	awsSecretKey string
+// ConfigureCluster is the callback for ConfigureCommand (cluster).
+func ConfigureCluster(context *cli.Context) {
+	// get relevant fields
+	region := context.String(command.RegionFlag)
+	clusterProfileName := context.String(command.ConfigNameFlag)
+	cluster := context.String(command.ClusterFlag)
+	logrus.Warnf("Name: %s, cluster: %s, region: %s", clusterProfileName, cluster, region)
+
+	// ecsConfig, err := createECSConfigFromCli(context)
+	// if err != nil {
+	// 	logrus.Error("Error initializing: ", err)
+	// 	return
+	// }
+	// rdwr, err := config.NewReadWriter()
+	// if err != nil {
+	// 	logrus.Error("Error initializing: ", err)
+	// 	return
+	// }
+	// err = saveConfig(ecsConfig, rdwr)
+	// if err != nil {
+	// 	logrus.Error("Error initializing: ", err)
+	// }
 }
 
-// ClusterConfiguration is a simple struct for storing a single cluster config
-// this struct is used in the ConfigureCluster callback to save a single cluster
-type ClusterConfiguration struct {
-	profileName string
-	cluster     string
-	region      string
+// ConfigureCluster is the callback for Configure Profile subcommand.
+func ConfigureProfile(context *cli.Context) {
+	// get relevant fields
+	secretKey := context.String(command.SecretKeyFlag)
+	profileName := context.String(command.ProfileNameFlag)
+	accessKey := context.String(command.AccessKeyFlag)
+	logrus.Warnf("Name: %s, access: %s, secret: %s", profileName, accessKey, secretKey)
 }
 
-// Configure is the callback for ConfigureCommand.
-func Configure(context *cli.Context) {
-	ecsConfig, err := createECSConfigFromCli(context)
-	if err != nil {
-		logrus.Error("Error initializing: ", err)
-		return
-	}
-	rdwr, err := config.NewReadWriter()
-	if err != nil {
-		logrus.Error("Error initializing: ", err)
-		return
-	}
-	err = saveConfig(ecsConfig, rdwr)
-	if err != nil {
-		logrus.Error("Error initializing: ", err)
-	}
+// ConfigureCluster is the callback for Configure Profile Default subcommand.
+func ConfigureDefaultProfile(context *cli.Context) {
+	// get relevant fields
+	profileName := context.String(command.ProfileNameFlag)
+	logrus.Warnf("Name: %s", profileName)
 }
 
 // createECSConfigFromCli creates a new CliConfig object from the CLI context.
@@ -90,12 +96,12 @@ func createECSConfigFromCli(context *cli.Context) (*config.CliConfig, error) {
 }
 
 // saveConfig does the actual configuration setup. This isolated method is useful for testing.
-func saveConfig(ecsConfig *config.CliConfig, rdwr config.ReadWriter) error {
-
-	err := rdwr.Save(ecsConfig)
-	if err != nil {
-		return err
-	}
-	logrus.Infof("Saved ECS CLI configuration for cluster (%s)", ecsConfig.Cluster)
-	return nil
-}
+// func saveConfig(ecsConfig *config.CliConfig, rdwr config.ReadWriter) error {
+//
+// 	err := rdwr.Save(ecsConfig)
+// 	if err != nil {
+// 		return err
+// 	}
+// 	logrus.Infof("Saved ECS CLI configuration for cluster (%s)", ecsConfig.Cluster)
+// 	return nil
+// }

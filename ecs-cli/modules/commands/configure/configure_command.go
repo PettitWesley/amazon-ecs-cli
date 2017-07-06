@@ -25,9 +25,68 @@ import (
 func ConfigureCommand() cli.Command {
 	return cli.Command{
 		Name:   "configure",
-		Usage:  "Configures your AWS credentials, the AWS region to use, and the ECS cluster name to use with the Amazon ECS CLI. The resulting configuration is stored in the ~/.ecs/config file.",
-		Action: configure.Configure,
+		Usage:  "Configures your AWS credentials, the AWS region to use, and the ECS cluster name to use with the Amazon ECS CLI. The resulting configuration is stored in the ~/.ecs/ directory.",
+		Action: configure.ConfigureCluster,
 		Flags:  configureFlags(),
+		Subcommands: []cli.Command{
+			cli.Command{
+				Name:   "profile",
+				Usage:  "Configures a single profile.",
+				Action: configure.ConfigureProfile,
+				Flags:  configureProfileFlags(),
+				Subcommands: []cli.Command{
+					cli.Command{
+						Name:   "default",
+						Usage:  "Sets the default profile.",
+						Action: configure.ConfigureDefaultProfile,
+						Flags:  configureDefaultProfileFlags(),
+					},
+				},
+			},
+		},
+	}
+}
+
+func configureDefaultProfileFlags() []cli.Flag {
+	return []cli.Flag{
+		cli.StringFlag{
+			Name: flags.ProfileNameFlag,
+			Usage: fmt.Sprintf(
+				"Specifies the name of the profile that will be stored in the configs.",
+			),
+		},
+	}
+}
+
+func configureProfileFlags() []cli.Flag {
+	return []cli.Flag{
+		cli.StringFlag{
+			Name: flags.AccessKeyFlag,
+			Usage: fmt.Sprintf(
+				"Specifies the AWS access key to use. If the AWS_ACCESS_KEY_ID environment variable is set when ecs-cli configure is run, then the AWS access key ID is set to the value of that environment variable.",
+			),
+			EnvVar: "AWS_ACCESS_KEY_ID",
+		},
+		cli.StringFlag{
+			Name: flags.SecretKeyFlag,
+			Usage: fmt.Sprintf(
+				"Specifies the AWS secret key to use. If the AWS_SECRET_ACCESS_KEY environment variable is set when ecs-cli configure is run, then the AWS secret access key is set to the value of that environment variable.",
+			),
+			EnvVar: "AWS_SECRET_ACCESS_KEY",
+		},
+		cli.StringFlag{
+			Name: flags.ProfileFlag + ", p",
+			Usage: fmt.Sprintf(
+				"Specifies your AWS credentials with an existing named profile from ~/.aws/credentials. If the AWS_PROFILE environment variable is set when ecs-cli configure is run, then the AWS named profile is set to the value of that environment variable.",
+			),
+			EnvVar: "AWS_PROFILE",
+		},
+		cli.StringFlag{
+			Name: flags.ProfileNameFlag,
+			Usage: fmt.Sprintf(
+				"Specifies the name of the profile that will be stored in the configs.",
+			),
+		},
 	}
 }
 
@@ -48,15 +107,9 @@ func configureFlags() []cli.Flag {
 			EnvVar: flags.AwsRegionEnvVar,
 		},
 		cli.StringFlag{
-			Name: flags.ClusterConfigFlag,
+			Name: flags.ConfigNameFlag,
 			Usage: fmt.Sprintf(
-				"Specifies the Cluster Configuration to use.",
-			),
-		},
-		cli.StringFlag{
-			Name: flags.ProfileConfigFlag,
-			Usage: fmt.Sprintf(
-				"Specifies the ECS Profile Configuration to use.",
+				"Specifies the name of the Profile that will be stored in the configs.",
 			),
 		},
 		cli.StringFlag{
