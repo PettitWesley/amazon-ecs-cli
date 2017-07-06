@@ -25,7 +25,7 @@ import (
 func ConfigureCommand() cli.Command {
 	return cli.Command{
 		Name:   "configure",
-		Usage:  "Configures your AWS credentials, the AWS region to use, and the ECS cluster name to use with the Amazon ECS CLI. The resulting configuration is stored in the ~/.ecs/ directory.",
+		Usage:  "Store a single cluster config.",
 		Action: configure.ConfigureCluster,
 		Flags:  configureFlags(),
 		Subcommands: []cli.Command{
@@ -43,6 +43,23 @@ func ConfigureCommand() cli.Command {
 					},
 				},
 			},
+			cli.Command{
+				Name:   "default",
+				Usage:  "Set the default cluster config.",
+				Action: configure.ConfigureDefaultCluster,
+				Flags:  configureDefaultClusterFlags(),
+			},
+		},
+	}
+}
+
+func configureDefaultClusterFlags() []cli.Flag {
+	return []cli.Flag{
+		cli.StringFlag{
+			Name: flags.ConfigNameFlag,
+			Usage: fmt.Sprintf(
+				"Specifies the name of the cluster config to set as default.",
+			),
 		},
 	}
 }
@@ -52,7 +69,7 @@ func configureDefaultProfileFlags() []cli.Flag {
 		cli.StringFlag{
 			Name: flags.ProfileNameFlag,
 			Usage: fmt.Sprintf(
-				"Specifies the name of the profile that will be stored in the configs.",
+				"Specifies the name of the cluster config to set as default.",
 			),
 		},
 	}

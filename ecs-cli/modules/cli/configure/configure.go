@@ -62,6 +62,13 @@ func ConfigureDefaultProfile(context *cli.Context) {
 	logrus.Warnf("Name: %s", profileName)
 }
 
+// ConfigureCluster is the callback for Configure Cluster Default subcommand.
+func ConfigureDefaultCluster(context *cli.Context) {
+	// get relevant fields
+	clusterName := context.String(command.ConfigNameFlag)
+	logrus.Warnf("Cluster Name: %s", clusterName)
+}
+
 // createECSConfigFromCli creates a new CliConfig object from the CLI context.
 // It reads CLI flags to validate the ecs-cli config fields.
 func createECSConfigFromCli(context *cli.Context) (*config.CliConfig, error) {
