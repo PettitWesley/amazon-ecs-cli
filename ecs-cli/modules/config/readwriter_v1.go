@@ -30,10 +30,30 @@ const (
 	configFileMode        = os.FileMode(0600)
 )
 
+// ProfileConfiguration is a simple struct for storing a single profile config
+// this struct is used in the ConfigureProfile callback to save a single profile
+type ProfileConfiguration struct {
+	profileName  string
+	awsAccessKey string
+	awsSecretKey string
+}
+
+// ClusterConfiguration is a simple struct for storing a single cluster config
+// this struct is used in the ConfigureCluster callback to save a single cluster
+type ClusterConfiguration struct {
+	profileName string
+	cluster     string
+	region      string
+}
+
 // ReadWriter interface has methods to read and write ecs-cli config to and from the config file.
 type ReadWriter interface {
 	Save(*CliConfig) error
-	GetConfig(string, string) (*CliConfig, map[interface{}]interface{}, error)
+	SaveProfile(*ProfileConfiguration) error
+	SaveCluster(*ClusterConfiguration) error
+	SetDefaultProfile(string) error
+	SetDefaultCluster(string) error
+	GetConfigs(string, string) (*CliConfig, map[interface{}]interface{}, error)
 }
 
 // YamlReadWriter implments the ReadWriter interfaces. It can be used to save and load
@@ -60,8 +80,10 @@ func NewReadWriter() (*YamlReadWriter, error) {
 	return &YamlReadWriter{destination: dest}, nil
 }
 
-// GetConfig gets the ecs-cli config object from the config file.
-func (rdwr *YamlReadWriter) GetConfig(clusterConfig string, profileConfig string) (*CliConfig, map[interface{}]interface{}, error) {
+// GetConfigs gets the ecs-cli config object from the config file(s).
+// This function either reads the old single configuration file
+// Or if the new files are present, it reads from them instead
+func (rdwr *YamlReadWriter) GetConfigs(clusterConfig string, profileConfig string) (*CliConfig, map[interface{}]interface{}, error) {
 	cliConfig := &CliConfig{SectionKeys: new(SectionKeys)}
 	configMap := make(map[interface{}]interface{})
 	// read the raw bytes of the config file
@@ -160,7 +182,7 @@ func processClusterMap(clusterConfigKey string, clusterMap map[interface{}]inter
 	}
 	cluster, ok := clusterMap["clusters"].(map[interface{}]interface{})[clusterConfigKey].(map[interface{}]interface{})
 	if !ok {
-		return errors.New("Format issue with profile config file; expected key not found.")
+		return errors.New("Format issue with cluster config file; expected key not found.")
 	}
 
 	configMap[clusterKey] = cluster[clusterKey]
@@ -205,39 +227,62 @@ func processClusterMap(clusterConfigKey string, clusterMap map[interface{}]inter
 
 }
 
-func (rdwr *YamlReadWriter) Save(cliConfig *CliConfig) error {
-	destMode := rdwr.destination.Mode
-	err := os.MkdirAll(rdwr.destination.Path, *destMode)
+func (rdwr *YamlReadWriter) SaveProfile(*ProfileConfiguration) error {
+	profileMap := make(map[interface{}]interface{})
+	profilePath := profileConfigPath(rdwr.destination)
+
+	// read profile file
+	// we must read the profile to see the existing config
+	// a new config with the same name will lead to replacement
+	// if this is the first config to be defined, then we make it default
+	dat, err := ioutil.ReadFile(profilePath)
 	if err != nil {
 		return err
 	}
-
-	path := clusterConfigPath(rdwr.destination)
-
-	// Warn the user if in path also exists
-	iniPath := iniConfigPath(rdwr.destination)
-	_, iniErr := os.Stat(iniPath)
-	if iniErr == nil {
-		logrus.Warnf("Writing yaml formatted config to %s/.ecs/.\nIni formatted config still exists in %s/.ecs/%s.", os.Getenv("HOME"), os.Getenv("HOME"), iniConfigFileName)
-	}
-
-	// If config file exists, set permissions first, because we may be writing creds.
-	if _, err := os.Stat(path); err == nil {
-		if err = os.Chmod(path, configFileMode); err != nil {
-			logrus.Errorf("Unable to chmod %s to mode %s", path, configFileMode)
-			return err
-		}
-	}
-
-	data, err := yaml.Marshal(cliConfig)
-	err = ioutil.WriteFile(path, data, configFileMode.Perm())
-	if err != nil {
-		logrus.Errorf("Unable to write config to %s", path)
+	// convert profile yaml to a map (replaces IsKeyPresent functionality)
+	if err = yaml.Unmarshal(dat, &profileMap); err != nil {
 		return err
 	}
+
+	profiles, ok := profileMap["ecs_profiles"].(map[interface{}]interface{})
 
 	return nil
+
 }
+
+// func  (rdwr *YamlReadWriter) Save(cliConfig *CliConfig) error {
+// 	destMode := rdwr.destination.Mode
+// 	err := os.MkdirAll(rdwr.destination.Path, *destMode)
+// 	if err != nil {
+// 		return err
+// 	}
+//
+// 	path := clusterConfigPath(rdwr.destination)
+//
+// 	// Warn the user if in path also exists
+// 	iniPath := iniConfigPath(rdwr.destination)
+// 	_, iniErr := os.Stat(iniPath)
+// 	if iniErr == nil {
+// 		logrus.Warnf("Writing yaml formatted config to %s/.ecs/.\nIni formatted config still exists in %s/.ecs/%s.", os.Getenv("HOME"), os.Getenv("HOME"), iniConfigFileName)
+// 	}
+//
+// 	// If config file exists, set permissions first, because we may be writing creds.
+// 	if _, err := os.Stat(path); err == nil {
+// 		if err = os.Chmod(path, configFileMode); err != nil {
+// 			logrus.Errorf("Unable to chmod %s to mode %s", path, configFileMode)
+// 			return err
+// 		}
+// 	}
+//
+// 	data, err := yaml.Marshal(cliConfig)
+// 	err = ioutil.WriteFile(path, data, configFileMode.Perm())
+// 	if err != nil {
+// 		logrus.Errorf("Unable to write config to %s", path)
+// 		return err
+// 	}
+//
+// 	return nil
+// }
 
 func profileConfigPath(dest *Destination) string {
 	return filepath.Join(dest.Path, profileConfigFileName)

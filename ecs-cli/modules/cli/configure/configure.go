@@ -22,6 +22,22 @@ import (
 	"github.com/urfave/cli"
 )
 
+// ProfileConfiguration is a simple struct for storing a single profile config
+// this struct is used in the ConfigureProfile callback to save a single profile
+type ProfileConfiguration struct {
+	profileName  string
+	awsAccessKey string
+	awsSecretKey string
+}
+
+// ClusterConfiguration is a simple struct for storing a single cluster config
+// this struct is used in the ConfigureCluster callback to save a single cluster
+type ClusterConfiguration struct {
+	profileName string
+	cluster     string
+	region      string
+}
+
 // Configure is the callback for ConfigureCommand.
 func Configure(context *cli.Context) {
 	ecsConfig, err := createECSConfigFromCli(context)

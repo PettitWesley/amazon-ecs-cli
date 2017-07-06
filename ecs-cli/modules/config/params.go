@@ -43,7 +43,7 @@ func NewCliParams(context *cli.Context, rdwr ReadWriter) (*CliParams, error) {
 	profileConfigFlag := context.String(ecscli.ProfileConfigFlag)
 	logrus.Warnf("ClusterConfigFlag: %s,  ProfileConfigFlag: %s", clusterConfigFlag, profileConfigFlag)
 
-	ecsConfig, configMap, err := rdwr.GetConfig(clusterConfigFlag, profileConfigFlag)
+	ecsConfig, configMap, err := rdwr.GetConfigs(clusterConfigFlag, profileConfigFlag)
 	logrus.Warnf("ecsConfig: %s", ecsConfig)
 	logrus.Warnf("configMap: %s", configMap)
 	if err != nil {
