@@ -41,7 +41,7 @@ type ProfileConfiguration struct {
 // ClusterConfiguration is a simple struct for storing a single cluster config
 // this struct is used in the ConfigureCluster callback to save a single cluster
 type ClusterConfiguration struct {
-	profileName string
+	clusterName string
 	cluster     string
 	region      string
 }
@@ -177,7 +177,7 @@ func processClusterMap(clusterConfigKey string, clusterMap map[interface{}]inter
 		var ok bool
 		clusterConfigKey, ok = clusterMap["default"].(string)
 		if !ok {
-			return errors.New("Format issue with profile config file; expected key not found.")
+			return errors.New("Format issue with cluster config file; expected key not found.")
 		}
 	}
 	cluster, ok := clusterMap["clusters"].(map[interface{}]interface{})[clusterConfigKey].(map[interface{}]interface{})
@@ -190,11 +190,11 @@ func processClusterMap(clusterConfigKey string, clusterMap map[interface{}]inter
 	configMap[regionKey] = cluster[regionKey]
 	cliConfig.Cluster, ok = cluster[clusterKey].(string)
 	if !ok {
-		return errors.New("Format issue with profile config file; expected key not found.")
+		return errors.New("Format issue with cluster config file; expected key not found.")
 	}
 	cliConfig.Region, ok = cluster[regionKey].(string)
 	if !ok {
-		return errors.New("Format issue with profile config file; expected key not found.")
+		return errors.New("Format issue with cluster config file; expected key not found.")
 	}
 
 	// Prefixes
@@ -203,7 +203,7 @@ func processClusterMap(clusterConfigKey string, clusterMap map[interface{}]inter
 		configMap[composeProjectNamePrefixKey] = cluster[composeProjectNamePrefixKey]
 		cliConfig.ComposeProjectNamePrefix, ok = cluster[composeProjectNamePrefixKey].(string)
 		if !ok {
-			return errors.New("Format issue with profile config file; expected key not found.")
+			return errors.New("Format issue with cluster config file; expected key not found.")
 		}
 	}
 	// ComposeServiceNamePrefix
@@ -211,7 +211,7 @@ func processClusterMap(clusterConfigKey string, clusterMap map[interface{}]inter
 		configMap[composeServiceNamePrefixKey] = cluster[composeServiceNamePrefixKey]
 		cliConfig.ComposeServiceNamePrefix, ok = cluster[composeServiceNamePrefixKey].(string)
 		if !ok {
-			return errors.New("Format issue with profile config file; expected key not found.")
+			return errors.New("Format issue with cluster config file; expected key not found.")
 		}
 	}
 	// CFNStackNamePrefix
@@ -219,7 +219,7 @@ func processClusterMap(clusterConfigKey string, clusterMap map[interface{}]inter
 		configMap[cfnStackNamePrefixKey] = cluster[cfnStackNamePrefixKey]
 		cliConfig.CFNStackNamePrefix, ok = cluster[cfnStackNamePrefixKey].(string)
 		if !ok {
-			return errors.New("Format issue with profile config file; expected key not found.")
+			return errors.New("Format issue with profile cluster file; expected key not found.")
 		}
 	}
 
@@ -227,7 +227,7 @@ func processClusterMap(clusterConfigKey string, clusterMap map[interface{}]inter
 
 }
 
-func (rdwr *YamlReadWriter) SaveProfile(*ProfileConfiguration) error {
+func (rdwr *YamlReadWriter) SaveProfile(profile *ProfileConfiguration) error {
 	profileMap := make(map[interface{}]interface{})
 	profilePath := profileConfigPath(rdwr.destination)
 
@@ -245,44 +245,97 @@ func (rdwr *YamlReadWriter) SaveProfile(*ProfileConfiguration) error {
 	}
 
 	profiles, ok := profileMap["ecs_profiles"].(map[interface{}]interface{})
+	if !ok {
+		return errors.New("Format issue with profile config file; expected key not found.")
+	}
+
+	if len(profiles) == 0 { // this is the first one to be defined; make default
+		profileMap["default"] = profile.profileName
+	}
+
+	newProfile := make(map[interface{}]interface{})
+	newProfile[awsAccessKey] = profile.awsAccessKey
+	newProfile[awsSecretKey] = profile.awsSecretKey
+
+	profiles[profile.profileName] = newProfile
+
+	// we must save the entire new config map to the file
+	rdwr.saveToFile(profilePath, profileMap)
 
 	return nil
 
 }
 
-// func  (rdwr *YamlReadWriter) Save(cliConfig *CliConfig) error {
-// 	destMode := rdwr.destination.Mode
-// 	err := os.MkdirAll(rdwr.destination.Path, *destMode)
-// 	if err != nil {
-// 		return err
-// 	}
-//
-// 	path := clusterConfigPath(rdwr.destination)
-//
-// 	// Warn the user if in path also exists
-// 	iniPath := iniConfigPath(rdwr.destination)
-// 	_, iniErr := os.Stat(iniPath)
-// 	if iniErr == nil {
-// 		logrus.Warnf("Writing yaml formatted config to %s/.ecs/.\nIni formatted config still exists in %s/.ecs/%s.", os.Getenv("HOME"), os.Getenv("HOME"), iniConfigFileName)
-// 	}
-//
-// 	// If config file exists, set permissions first, because we may be writing creds.
-// 	if _, err := os.Stat(path); err == nil {
-// 		if err = os.Chmod(path, configFileMode); err != nil {
-// 			logrus.Errorf("Unable to chmod %s to mode %s", path, configFileMode)
-// 			return err
-// 		}
-// 	}
-//
-// 	data, err := yaml.Marshal(cliConfig)
-// 	err = ioutil.WriteFile(path, data, configFileMode.Perm())
-// 	if err != nil {
-// 		logrus.Errorf("Unable to write config to %s", path)
-// 		return err
-// 	}
-//
-// 	return nil
-// }
+func (rdwr *YamlReadWriter) SaveCluster(cluster *ClusterConfiguration) error {
+	clusterMap := make(map[interface{}]interface{})
+	clusterPath := clusterConfigPath(rdwr.destination)
+
+	// read profile file
+	// we must read the profile to see the existing config
+	// a new config with the same name will lead to replacement
+	// if this is the first config to be defined, then we make it default
+	dat, err := ioutil.ReadFile(clusterPath)
+	if err != nil {
+		return err
+	}
+	// convert profile yaml to a map (replaces IsKeyPresent functionality)
+	if err = yaml.Unmarshal(dat, &clusterMap); err != nil {
+		return err
+	}
+
+	clusters, ok := clusterMap["clusters"].(map[interface{}]interface{})
+	if !ok {
+		return errors.New("Format issue with cluster config file; expected key not found.")
+	}
+
+	if len(clusters) == 0 { // this is the first one to be defined; make default
+		clusterMap["default"] = cluster.clusterName
+	}
+
+	newCluster := make(map[interface{}]interface{})
+	newCluster[clusterKey] = cluster.cluster
+	newCluster[regionKey] = cluster.region
+
+	clusters[cluster.clusterName] = newCluster
+
+	// we must save the entire new config map to the file
+	rdwr.saveToFile(clusterPath, clusterMap)
+
+	return nil
+
+}
+
+func (rdwr *YamlReadWriter) saveToFile(path string, config map[interface{}]interface{}) error {
+	destMode := rdwr.destination.Mode
+	err := os.MkdirAll(rdwr.destination.Path, *destMode)
+	if err != nil {
+		return err
+	}
+
+	// Warn the user if in path also exists
+	iniPath := iniConfigPath(rdwr.destination)
+	_, iniErr := os.Stat(iniPath)
+	if iniErr == nil {
+		logrus.Warnf("Writing yaml formatted config to %s/.ecs/.\nIni formatted config still exists in %s/.ecs/%s.", os.Getenv("HOME"), os.Getenv("HOME"), iniConfigFileName)
+	}
+
+	// If config file exists, set permissions first, because we may be writing creds.
+	if _, err := os.Stat(path); err == nil {
+		if err = os.Chmod(path, configFileMode); err != nil {
+			logrus.Errorf("Unable to chmod %s to mode %s", path, configFileMode)
+			return err
+		}
+	}
+
+	data, err := yaml.Marshal(config)
+	err = ioutil.WriteFile(path, data, configFileMode.Perm())
+	if err != nil {
+		logrus.Errorf("Unable to write config to %s", path)
+		return err
+	}
+
+	return nil
+}
 
 func profileConfigPath(dest *Destination) string {
 	return filepath.Join(dest.Path, profileConfigFileName)
