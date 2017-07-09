@@ -24,7 +24,6 @@ import (
 )
 
 const (
-	ecsSectionKey               = "ecs"
 	ecsVersionKey               = "v1"
 	composeProjectNamePrefixKey = "compose-project-name-prefix"
 	composeServiceNamePrefixKey = "compose-service-name-prefix"
