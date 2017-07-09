@@ -31,12 +31,10 @@ const (
 )
 
 // CliConfig is the top level struct used to map to the yaml config.
+// v0 = YAML formatted single config
+// v1 = YAML formatted configs split profile and cluster
 type CliConfig struct {
-	*SectionKeys `yaml:"v1"`
-}
-
-// SectionKeys is the struct embedded in CliConfig. It groups all the keys in the 'ecs' section in the yaml file.
-type SectionKeys struct {
+	Version                  string `yaml:"version"`
 	Cluster                  string `yaml:"cluster"`
 	AwsProfile               string `yaml:"aws_profile"`
 	Region                   string `yaml:"region"`
@@ -49,7 +47,7 @@ type SectionKeys struct {
 
 // NewCliConfig creates a new instance of CliConfig from the cluster name.
 func NewCliConfig(cluster string) *CliConfig {
-	return &CliConfig{&SectionKeys{Cluster: cluster}}
+	return &CliConfig{Cluster: cluster}
 }
 
 // ToAWSSession creates a new Session object from the CliConfig object.
