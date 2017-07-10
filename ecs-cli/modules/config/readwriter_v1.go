@@ -33,17 +33,17 @@ const (
 // ProfileConfiguration is a simple struct for storing a single profile config
 // this struct is used in the ConfigureProfile callback to save a single profile
 type ProfileConfiguration struct {
-	profileName  string
-	awsAccessKey string
-	awsSecretKey string
+	ProfileName  string
+	AwsAccessKey string
+	AwsSecretKey string
 }
 
 // ClusterConfiguration is a simple struct for storing a single cluster config
 // this struct is used in the ConfigureCluster callback to save a single cluster
 type ClusterConfiguration struct {
-	clusterName string
-	cluster     string
-	region      string
+	ClusterProfileName string
+	Cluster            string
+	Region             string
 }
 
 // ReadWriter interface has methods to read and write ecs-cli config to and from the config file.
@@ -233,6 +233,7 @@ func (rdwr *YamlReadWriter) SetDefaultProfile(profile string) error {
 	// read profile file
 	dat, err := ioutil.ReadFile(profilePath)
 	if err != nil {
+		logrus.Error("Could not read configuration file; cannot set default before any configurations have been created")
 		return err
 	}
 	// convert profile yaml to a map
@@ -255,6 +256,7 @@ func (rdwr *YamlReadWriter) SetDefaultCluster(cluster string) error {
 	// read profile file
 	dat, err := ioutil.ReadFile(clusterPath)
 	if err != nil {
+		logrus.Error("Could not read configuration file; cannot set default before any configurations have been created")
 		return err
 	}
 	// convert profile yaml to a map
@@ -280,11 +282,13 @@ func (rdwr *YamlReadWriter) SaveProfile(profile *ProfileConfiguration) error {
 	// if this is the first config to be defined, then we make it default
 	dat, err := ioutil.ReadFile(profilePath)
 	if err != nil {
-		return err
-	}
-	// convert profile yaml to a map
-	if err = yaml.Unmarshal(dat, &profileMap); err != nil {
-		return err
+		// No profile yet; initialize profileMap without any profile
+		profileMap["ecs_profiles"] = make(map[interface{}]interface{})
+	} else {
+		// convert profile yaml to a map
+		if err = yaml.Unmarshal(dat, &profileMap); err != nil {
+			return err
+		}
 	}
 
 	profiles, ok := profileMap["ecs_profiles"].(map[interface{}]interface{})
@@ -293,14 +297,14 @@ func (rdwr *YamlReadWriter) SaveProfile(profile *ProfileConfiguration) error {
 	}
 
 	if len(profiles) == 0 { // this is the first one to be defined; make default
-		profileMap["default"] = profile.profileName
+		profileMap["default"] = profile.ProfileName
 	}
 
 	newProfile := make(map[interface{}]interface{})
-	newProfile[awsAccessKey] = profile.awsAccessKey
-	newProfile[awsSecretKey] = profile.awsSecretKey
+	newProfile[awsAccessKey] = profile.AwsAccessKey
+	newProfile[awsSecretKey] = profile.AwsSecretKey
 
-	profiles[profile.profileName] = newProfile
+	profiles[profile.ProfileName] = newProfile
 
 	// we must save the entire new config map to the file
 	rdwr.saveToFile(profilePath, profileMap)
@@ -319,11 +323,13 @@ func (rdwr *YamlReadWriter) SaveCluster(cluster *ClusterConfiguration) error {
 	// if this is the first config to be defined, then we make it default
 	dat, err := ioutil.ReadFile(clusterPath)
 	if err != nil {
-		return err
-	}
-	// convert profile yaml to a map
-	if err = yaml.Unmarshal(dat, &clusterMap); err != nil {
-		return err
+		// there is no file yet; initialize clusterMap without any clusters
+		clusterMap["clusters"] = make(map[interface{}]interface{})
+	} else {
+		// convert profile yaml to a map
+		if err = yaml.Unmarshal(dat, &clusterMap); err != nil {
+			return err
+		}
 	}
 
 	clusters, ok := clusterMap["clusters"].(map[interface{}]interface{})
@@ -332,14 +338,14 @@ func (rdwr *YamlReadWriter) SaveCluster(cluster *ClusterConfiguration) error {
 	}
 
 	if len(clusters) == 0 { // this is the first one to be defined; make default
-		clusterMap["default"] = cluster.clusterName
+		clusterMap["default"] = cluster.ClusterProfileName
 	}
 
 	newCluster := make(map[interface{}]interface{})
-	newCluster[clusterKey] = cluster.cluster
-	newCluster[regionKey] = cluster.region
+	newCluster[clusterKey] = cluster.Cluster
+	newCluster[regionKey] = cluster.Region
 
-	clusters[cluster.clusterName] = newCluster
+	clusters[cluster.ClusterProfileName] = newCluster
 
 	// we must save the entire new config map to the file
 	rdwr.saveToFile(clusterPath, clusterMap)
