@@ -24,15 +24,14 @@ import (
 )
 
 const (
-	ecsVersionKey               = "v1"
+	configVersion               = "v1"
 	composeProjectNamePrefixKey = "compose-project-name-prefix"
 	composeServiceNamePrefixKey = "compose-service-name-prefix"
 	cfnStackNamePrefixKey       = "cfn-stack-name-prefix"
 )
 
 // CliConfig is the top level struct used to map to the yaml config.
-// v0 = YAML formatted single config
-// v1 = YAML formatted configs split profile and cluster
+// Version: v1 = YAML formatted configs split profile and cluster
 type CliConfig struct {
 	Version                  string `yaml:"version"`
 	Cluster                  string `yaml:"cluster"`
