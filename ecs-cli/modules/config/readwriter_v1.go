@@ -135,7 +135,6 @@ func (rdwr *YamlReadWriter) GetConfigs(clusterConfig string, profileConfig strin
 			return nil, nil, err
 		}
 
-		logrus.Warnf("c: %s, p: %s", clusterConfig, profileConfig)
 		processProfileMap(profileConfig, profileMap, configMap, cliConfig)
 		processClusterMap(clusterConfig, clusterMap, configMap, cliConfig)
 
@@ -185,7 +184,6 @@ func processClusterMap(clusterConfigKey string, clusterMap map[interface{}]inter
 	}
 
 	configMap[clusterKey] = cluster[clusterKey]
-	logrus.Warnf("Cluster from file: %s", cluster[clusterKey])
 	configMap[regionKey] = cluster[regionKey]
 	cliConfig.Cluster, ok = cluster[clusterKey].(string)
 	if !ok {
@@ -233,7 +231,7 @@ func (rdwr *YamlReadWriter) SetDefaultProfile(profile string) error {
 	// read profile file
 	dat, err := ioutil.ReadFile(profilePath)
 	if err != nil {
-		logrus.Error("Could not read configuration file; cannot set default before any configurations have been created")
+		logrus.Error("Could not read configuration file; cannot set default before any configurations have been created.")
 		return err
 	}
 	// convert profile yaml to a map
@@ -256,7 +254,7 @@ func (rdwr *YamlReadWriter) SetDefaultCluster(cluster string) error {
 	// read profile file
 	dat, err := ioutil.ReadFile(clusterPath)
 	if err != nil {
-		logrus.Error("Could not read configuration file; cannot set default before any configurations have been created")
+		logrus.Error("Could not read configuration file; cannot set default before any configurations have been created.")
 		return err
 	}
 	// convert profile yaml to a map
@@ -359,13 +357,6 @@ func (rdwr *YamlReadWriter) saveToFile(path string, config map[interface{}]inter
 	err := os.MkdirAll(rdwr.destination.Path, *destMode)
 	if err != nil {
 		return err
-	}
-
-	// Warn the user if in path also exists
-	iniPath := iniConfigPath(rdwr.destination)
-	_, iniErr := os.Stat(iniPath)
-	if iniErr == nil {
-		logrus.Warnf("Writing yaml formatted config to %s/.ecs/.\nIni formatted config still exists in %s/.ecs/%s.", os.Getenv("HOME"), os.Getenv("HOME"), iniConfigFileName)
 	}
 
 	// If config file exists, set permissions first, because we may be writing creds.

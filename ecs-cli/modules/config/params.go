@@ -41,11 +41,7 @@ func (p *CliParams) GetCfnStackName() string {
 func NewCliParams(context *cli.Context, rdwr ReadWriter) (*CliParams, error) {
 	clusterConfigFlag := context.String(ecscli.ClusterConfigFlag)
 	profileConfigFlag := context.String(ecscli.ProfileConfigFlag)
-	logrus.Warnf("ClusterConfigFlag: %s,  ProfileConfigFlag: %s", clusterConfigFlag, profileConfigFlag)
-
 	ecsConfig, configMap, err := rdwr.GetConfigs(clusterConfigFlag, profileConfigFlag)
-	logrus.Warnf("ecsConfig: %s", ecsConfig)
-	logrus.Warnf("configMap: %s", configMap)
 	if err != nil {
 		logrus.Error("Error loading config: ", err)
 		return nil, err

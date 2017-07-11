@@ -32,11 +32,11 @@ func ConfigureCluster(context *cli.Context) {
 	// modify the profile config file
 	rdwr, err := config.NewReadWriter()
 	if err != nil {
-		logrus.Error("Error initializing: ", err)
+		logrus.Error("Error with config file: ", err)
 		return
 	}
 	if err = rdwr.SaveCluster(clusterConfig); err != nil {
-		logrus.Error("Error initializing: ", err)
+		logrus.Error("Error with config file: ", err)
 	}
 }
 
@@ -52,11 +52,11 @@ func ConfigureProfile(context *cli.Context) {
 	// modify the profile config file
 	rdwr, err := config.NewReadWriter()
 	if err != nil {
-		logrus.Error("Error initializing: ", err)
+		logrus.Error("Error with config file: ", err)
 		return
 	}
 	if err = rdwr.SaveProfile(profile); err != nil {
-		logrus.Error("Error initializing: ", err)
+		logrus.Error("Error with config file: ", err)
 	}
 
 }
@@ -69,11 +69,11 @@ func ConfigureDefaultProfile(context *cli.Context) {
 	// modify the profile config file
 	rdwr, err := config.NewReadWriter()
 	if err != nil {
-		logrus.Error("Error initializing: ", err)
+		logrus.Error("Error with config file: ", err)
 		return
 	}
 	if err = rdwr.SetDefaultProfile(profileName); err != nil {
-		logrus.Error("Error initializing: ", err)
+		logrus.Error("Error with config file: ", err)
 	}
 
 }
@@ -86,10 +86,10 @@ func ConfigureDefaultCluster(context *cli.Context) {
 	// modify the profile config file
 	rdwr, err := config.NewReadWriter()
 	if err != nil {
-		logrus.Error("Error initializing: ", err)
+		logrus.Error("Error with config file: ", err)
 		return
 	}
 	if err = rdwr.SetDefaultCluster(clusterName); err != nil {
-		logrus.Error("Error initializing: ", err)
+		logrus.Error("Error with config file: ", err)
 	}
 }
