@@ -1,0 +1,102 @@
+{
+  "requiresAttributes": [
+    {
+      "value": null,
+      "name": "com.amazonaws.ecs.capability.docker-remote-api.1.17",
+      "targetId": null,
+      "targetType": null
+    },
+    {
+      "value": null,
+      "name": "com.amazonaws.ecs.capability.docker-remote-api.1.18",
+      "targetId": null,
+      "targetType": null
+    }
+  ],
+  "taskDefinitionArn": "arn:aws:ecs:us-west-2:144718711470:task-definition/ecscompose-test3:1",
+  "networkMode": "bridge",
+  "status": "ACTIVE",
+  "revision": 1,
+  "taskRoleArn": null,
+  "containerDefinitions": [
+    {
+      "volumesFrom": [],
+      "memory": 500,
+      "extraHosts": [],
+      "dnsServers": [],
+      "disableNetworking": null,
+      "dnsSearchDomains": [],
+      "portMappings": [],
+      "hostname": null,
+      "essential": true,
+      "entryPoint": [],
+      "mountPoints": [],
+      "name": "mysql",
+      "ulimits": [],
+      "dockerSecurityOptions": [],
+      "environment": [
+        {
+          "name": "MYSQL_ROOT_PASSWORD",
+          "value": "password1234ImSoSmart"
+        }
+      ],
+      "links": [],
+      "workingDirectory": null,
+      "readonlyRootFilesystem": false,
+      "image": "mysql",
+      "command": [],
+      "user": null,
+      "dockerLabels": {},
+      "logConfiguration": null,
+      "cpu": 200,
+      "privileged": false,
+      "memoryReservation": null
+    },
+    {
+      "volumesFrom": [],
+      "memory": 500,
+      "extraHosts": [],
+      "dnsServers": [],
+      "disableNetworking": null,
+      "dnsSearchDomains": [],
+      "portMappings": [
+        {
+          "hostPort": 80,
+          "containerPort": 80,
+          "protocol": "tcp"
+        },
+        {
+          "hostPort": 8080,
+          "containerPort": 8080,
+          "protocol": "tcp"
+        }
+      ],
+      "hostname": null,
+      "essential": true,
+      "entryPoint": [],
+      "mountPoints": [],
+      "name": "wordpress",
+      "ulimits": [],
+      "dockerSecurityOptions": [],
+      "environment": [],
+      "links": [
+        "mysql",
+        "mysql"
+      ],
+      "workingDirectory": null,
+      "readonlyRootFilesystem": false,
+      "image": "wordpress",
+      "command": [],
+      "user": null,
+      "dockerLabels": {},
+      "logConfiguration": null,
+      "cpu": 100,
+      "privileged": false,
+      "memoryReservation": null,
+      "expanded": true
+    }
+  ],
+  "placementConstraints": [],
+  "volumes": [],
+  "family": "ecscompose-test3"
+}

@@ -1,0 +1,8 @@
+version: '2'
+services:
+  wordpress:
+    image: wordpress
+    cpu_shares: 50
+    mem_limit: 122k
+    ports:
+      - "8080:8080"

@@ -1,0 +1,250 @@
+[
+    {
+        "Id": "af8684948f026b2e7752171877b86914d5958f35849240411ed15728f3334373",
+        "Created": "2017-06-27T03:10:41.303183382Z",
+        "Path": "docker-entrypoint.sh",
+        "Args": [
+            "apache2-foreground"
+        ],
+        "State": {
+            "Status": "running",
+            "Running": true,
+            "Paused": false,
+            "Restarting": false,
+            "OOMKilled": false,
+            "Dead": false,
+            "Pid": 4084,
+            "ExitCode": 0,
+            "Error": "",
+            "StartedAt": "2017-06-27T03:10:41.950686561Z",
+            "FinishedAt": "0001-01-01T00:00:00Z"
+        },
+        "Image": "sha256:a8f5a76ca5cd4f824d0551e8dff862d50a1b6b26f266d6ef9de80e0ed771be38",
+        "ResolvConfPath": "/var/lib/docker/containers/af8684948f026b2e7752171877b86914d5958f35849240411ed15728f3334373/resolv.conf",
+        "HostnamePath": "/var/lib/docker/containers/af8684948f026b2e7752171877b86914d5958f35849240411ed15728f3334373/hostname",
+        "HostsPath": "/var/lib/docker/containers/af8684948f026b2e7752171877b86914d5958f35849240411ed15728f3334373/hosts",
+        "LogPath": "/var/lib/docker/containers/af8684948f026b2e7752171877b86914d5958f35849240411ed15728f3334373/af8684948f026b2e7752171877b86914d5958f35849240411ed15728f3334373-json.log",
+        "Name": "/ecs-ecscompose-test3-1-wordpress-acbcc2c7e3f3b0be1000",
+        "RestartCount": 0,
+        "Driver": "devicemapper",
+        "MountLabel": "",
+        "ProcessLabel": "",
+        "AppArmorProfile": "",
+        "ExecIDs": null,
+        "HostConfig": {
+            "Binds": null,
+            "ContainerIDFile": "",
+            "LogConfig": {
+                "Type": "json-file",
+                "Config": {}
+            },
+            "NetworkMode": "default",
+            "PortBindings": {
+                "80/tcp": [
+                    {
+                        "HostIp": "0.0.0.0",
+                        "HostPort": "80"
+                    }
+                ],
+                "8080/tcp": [
+                    {
+                        "HostIp": "0.0.0.0",
+                        "HostPort": "8080"
+                    }
+                ]
+            },
+            "RestartPolicy": {
+                "Name": "",
+                "MaximumRetryCount": 0
+            },
+            "AutoRemove": false,
+            "VolumeDriver": "",
+            "VolumesFrom": null,
+            "CapAdd": null,
+            "CapDrop": null,
+            "Dns": null,
+            "DnsOptions": null,
+            "DnsSearch": null,
+            "ExtraHosts": null,
+            "GroupAdd": null,
+            "IpcMode": "",
+            "Cgroup": "",
+            "Links": [
+                "/ecs-ecscompose-test3-1-mysql-bcbbcd9da8f2c2a8c201:/ecs-ecscompose-test3-1-wordpress-acbcc2c7e3f3b0be1000/mysql"
+            ],
+            "OomScoreAdj": 0,
+            "PidMode": "",
+            "Privileged": false,
+            "PublishAllPorts": false,
+            "ReadonlyRootfs": false,
+            "SecurityOpt": null,
+            "UTSMode": "",
+            "UsernsMode": "",
+            "ShmSize": 67108864,
+            "Runtime": "runc",
+            "ConsoleSize": [
+                0,
+                0
+            ],
+            "Isolation": "",
+            "CpuShares": 100,
+            "Memory": 524288000,
+            "NanoCpus": 0,
+            "CgroupParent": "",
+            "BlkioWeight": 0,
+            "BlkioWeightDevice": null,
+            "BlkioDeviceReadBps": null,
+            "BlkioDeviceWriteBps": null,
+            "BlkioDeviceReadIOps": null,
+            "BlkioDeviceWriteIOps": null,
+            "CpuPeriod": 0,
+            "CpuQuota": 0,
+            "CpuRealtimePeriod": 0,
+            "CpuRealtimeRuntime": 0,
+            "CpusetCpus": "",
+            "CpusetMems": "",
+            "Devices": null,
+            "DiskQuota": 0,
+            "KernelMemory": 0,
+            "MemoryReservation": 0,
+            "MemorySwap": 1048576000,
+            "MemorySwappiness": -1,
+            "OomKillDisable": false,
+            "PidsLimit": 0,
+            "Ulimits": [
+                {
+                    "Name": "nofile",
+                    "Hard": 4096,
+                    "Soft": 1024
+                }
+            ],
+            "CpuCount": 0,
+            "CpuPercent": 0,
+            "IOMaximumIOps": 0,
+            "IOMaximumBandwidth": 0
+        },
+        "GraphDriver": {
+            "Name": "devicemapper",
+            "Data": {
+                "DeviceId": "39",
+                "DeviceName": "docker-202:1-263262-c0ef3f300cf25671a1340635df11eac4c18f532abae41bd1790044283c756105",
+                "DeviceSize": "10737418240"
+            }
+        },
+        "Mounts": [
+            {
+                "Type": "volume",
+                "Name": "3edc6d3eb15ebf2ca7951446d1a38a7a30aaa95c92bf292c4dc738a2c6bdca61",
+                "Source": "/var/lib/docker/volumes/3edc6d3eb15ebf2ca7951446d1a38a7a30aaa95c92bf292c4dc738a2c6bdca61/_data",
+                "Destination": "/var/www/html",
+                "Driver": "local",
+                "Mode": "",
+                "RW": true,
+                "Propagation": ""
+            }
+        ],
+        "Config": {
+            "Hostname": "af8684948f02",
+            "Domainname": "",
+            "User": "",
+            "AttachStdin": false,
+            "AttachStdout": false,
+            "AttachStderr": false,
+            "ExposedPorts": {
+                "80/tcp": {},
+                "8080/tcp": {}
+            },
+            "Tty": false,
+            "OpenStdin": false,
+            "StdinOnce": false,
+            "Env": [
+                "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+                "PHPIZE_DEPS=autoconf \t\tdpkg-dev \t\tfile \t\tg++ \t\tgcc \t\tlibc-dev \t\tlibpcre3-dev \t\tmake \t\tpkg-config \t\tre2c",
+                "PHP_INI_DIR=/usr/local/etc/php",
+                "APACHE_CONFDIR=/etc/apache2",
+                "APACHE_ENVVARS=/etc/apache2/envvars",
+                "PHP_EXTRA_BUILD_DEPS=apache2-dev",
+                "PHP_EXTRA_CONFIGURE_ARGS=--with-apxs2",
+                "PHP_CFLAGS=-fstack-protector-strong -fpic -fpie -O2",
+                "PHP_CPPFLAGS=-fstack-protector-strong -fpic -fpie -O2",
+                "PHP_LDFLAGS=-Wl,-O1 -Wl,--hash-style=both -pie",
+                "GPG_KEYS=0BD78B5F97500D450838F95DFE857D9A90D90EC1 6E4F6AB321FDC07F2C332E3AC2BF0BC433CFC8B3",
+                "PHP_VERSION=5.6.30",
+                "PHP_URL=https://secure.php.net/get/php-5.6.30.tar.xz/from/this/mirror",
+                "PHP_ASC_URL=https://secure.php.net/get/php-5.6.30.tar.xz.asc/from/this/mirror",
+                "PHP_SHA256=a363185c786432f75e3c7ff956b49c3369c3f6906a6b10459f8d1ddc22f70805",
+                "PHP_MD5=68753955a8964ae49064c6424f81eb3e",
+                "WORDPRESS_VERSION=4.8",
+                "WORDPRESS_SHA1=3738189a1f37a03fb9cb087160b457d7a641ccb4"
+            ],
+            "Cmd": [
+                "apache2-foreground"
+            ],
+            "ArgsEscaped": true,
+            "Image": "wordpress",
+            "Volumes": {
+                "/var/www/html": {}
+            },
+            "WorkingDir": "/var/www/html",
+            "Entrypoint": [
+                "docker-entrypoint.sh"
+            ],
+            "OnBuild": null,
+            "Labels": {
+                "com.amazonaws.ecs.cluster": "LINK",
+                "com.amazonaws.ecs.container-name": "wordpress",
+                "com.amazonaws.ecs.task-arn": "arn:aws:ecs:us-west-2:144718711470:task/f89e10cc-93c6-4261-8927-dc44dfc5ad35",
+                "com.amazonaws.ecs.task-definition-family": "ecscompose-test3",
+                "com.amazonaws.ecs.task-definition-version": "1"
+            }
+        },
+        "NetworkSettings": {
+            "Bridge": "",
+            "SandboxID": "9dc1dfc1dd4254feb6cf02fee05b23c8f3c97343c86add64019050c9c08803bb",
+            "HairpinMode": false,
+            "LinkLocalIPv6Address": "",
+            "LinkLocalIPv6PrefixLen": 0,
+            "Ports": {
+                "80/tcp": [
+                    {
+                        "HostIp": "0.0.0.0",
+                        "HostPort": "80"
+                    }
+                ],
+                "8080/tcp": [
+                    {
+                        "HostIp": "0.0.0.0",
+                        "HostPort": "8080"
+                    }
+                ]
+            },
+            "SandboxKey": "/var/run/docker/netns/9dc1dfc1dd42",
+            "SecondaryIPAddresses": null,
+            "SecondaryIPv6Addresses": null,
+            "EndpointID": "80b5a728e4d99bc7e9c3b067694ee678f68b7d8a51ea73bebd70b68c0cea6c63",
+            "Gateway": "172.17.0.1",
+            "GlobalIPv6Address": "",
+            "GlobalIPv6PrefixLen": 0,
+            "IPAddress": "172.17.0.3",
+            "IPPrefixLen": 16,
+            "IPv6Gateway": "",
+            "MacAddress": "02:42:ac:11:00:03",
+            "Networks": {
+                "bridge": {
+                    "IPAMConfig": null,
+                    "Links": null,
+                    "Aliases": null,
+                    "NetworkID": "38a9ab0d625d6db5fc07e6edfac25ca9017f88258bfade2b03b27d71c3212be6",
+                    "EndpointID": "80b5a728e4d99bc7e9c3b067694ee678f68b7d8a51ea73bebd70b68c0cea6c63",
+                    "Gateway": "172.17.0.1",
+                    "IPAddress": "172.17.0.3",
+                    "IPPrefixLen": 16,
+                    "IPv6Gateway": "",
+                    "GlobalIPv6Address": "",
+                    "GlobalIPv6PrefixLen": 0,
+                    "MacAddress": "02:42:ac:11:00:03"
+                }
+            }
+        }
+    }
+]

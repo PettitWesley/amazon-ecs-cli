@@ -1,0 +1,1 @@
+Raw file read: [ecs]\ncluster                     = test-cluster\naws_profile                 = aws-profile\nregion                      = narnia-west-1\naws_access_key_id           = \naws_secret_access_key       = \ncompose-project-name-prefix = \ncompose-service-name-prefix = \ncfn-stack-name-prefix       = \n\n

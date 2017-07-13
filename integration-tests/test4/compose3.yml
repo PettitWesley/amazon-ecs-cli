@@ -1,0 +1,16 @@
+version: '2'
+services:
+  mysql:
+    image: mysql
+    cpu_shares: 200
+    mem_limit: 524288000
+    environment:
+      MYSQL_ROOT_PASSWORD: password1234ImSoSmart
+  wordpress:
+    image: wordpress
+    cpu_shares: 100
+    mem_limit: 524288000
+    ports:
+      - "8080:8080"
+    links:
+      - mysql

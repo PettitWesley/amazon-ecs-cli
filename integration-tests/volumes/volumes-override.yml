@@ -1,0 +1,12 @@
+data-container:
+  image: redis:latest
+  volumes:
+    - /tmp/mattsmith
+  mem_limit: 100M
+
+data-container2:
+  image: redis:latest
+  volumes:
+    - /tmp/hi/iloveponies:/tmp/helloponies
+    - /tmp/doctorwho:/tmp/11
+  mem_limit: 100M

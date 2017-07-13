@@ -1,0 +1,17 @@
+data-container:
+  image: redis:latest
+  volumes:
+    - /tmp/stuff
+    - /tmp/bar:/foo/baz
+    - /tmp/ponies
+    - /tmp/foo:/tmp/bar
+    - /tmp/foo:/tmp/baz
+  mem_limit: 100M
+  
+data-container2:
+  image: redis:latest
+  volumes:
+    - /tmp/hi:/tmp/hello
+    - /tmp/foo:/tmp/foo
+    - /tmp/unicorns
+  mem_limit: 100M
