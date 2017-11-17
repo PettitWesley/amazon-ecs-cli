@@ -21,6 +21,7 @@ import (
 	"github.com/aws/amazon-ecs-cli/ecs-cli/modules/commands/cluster"
 	"github.com/aws/amazon-ecs-cli/ecs-cli/modules/commands/compose"
 	"github.com/aws/amazon-ecs-cli/ecs-cli/modules/commands/configure"
+	"github.com/aws/amazon-ecs-cli/ecs-cli/modules/commands/flags"
 	"github.com/aws/amazon-ecs-cli/ecs-cli/modules/commands/image"
 	"github.com/aws/amazon-ecs-cli/ecs-cli/modules/commands/license"
 	"github.com/aws/amazon-ecs-cli/ecs-cli/modules/utils/logger"
@@ -39,6 +40,13 @@ func main() {
 	app.Usage = "Command line interface for Amazon ECS"
 	app.Version = version.String()
 	app.Author = "Amazon Web Services"
+
+	app.Flags = []cli.Flag{
+		cli.StringFlag{
+			Name:  flags.EndpointFlag,
+			Usage: "Use a custom endpoint.",
+		},
+	}
 
 	composeFactory := ecscompose.NewProjectFactory()
 

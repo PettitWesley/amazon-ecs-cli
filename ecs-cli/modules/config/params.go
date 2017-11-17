@@ -17,6 +17,7 @@ import (
 	"os"
 
 	"github.com/aws/amazon-ecs-cli/ecs-cli/modules/commands/flags"
+	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/pkg/errors"
 	"github.com/urfave/cli"
@@ -48,6 +49,7 @@ func recursiveFlagSearch(context *cli.Context, flag string) string {
 func NewCLIParams(context *cli.Context, rdwr ReadWriter) (*CLIParams, error) {
 	clusterConfig := recursiveFlagSearch(context, flags.ClusterConfigFlag)
 	profileConfig := recursiveFlagSearch(context, flags.ECSProfileFlag)
+	endpoint := recursiveFlagSearch(context, flags.EndpointFlag)
 	ecsConfig, err := rdwr.Get(clusterConfig, profileConfig)
 
 	if err != nil {
@@ -77,7 +79,7 @@ func NewCLIParams(context *cli.Context, rdwr ReadWriter) (*CLIParams, error) {
 		ecsConfig.AWSSecretKey = ""
 	}
 
-	svcSession, err := ecsConfig.ToAWSSession(context)
+	svcSession, err := ecsConfig.ToAWSSession(context, &aws.Config{Endpoint: aws.String(endpoint)})
 	if err != nil {
 		return nil, err
 	}

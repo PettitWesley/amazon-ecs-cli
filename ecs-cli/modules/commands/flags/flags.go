@@ -44,6 +44,8 @@ const (
 	AWSAccessKeyEnvVar      = "AWS_ACCESS_KEY_ID"
 	AWSSecretKeyEnvVar      = "AWS_SECRET_ACCESS_KEY"
 
+	EndpointFlag = "endpoint"
+
 	ComposeProjectNamePrefixFlag         = "compose-project-name-prefix"
 	ComposeProjectNamePrefixDefaultValue = "ecscompose-"
 	ComposeServiceNamePrefixFlag         = "compose-service-name-prefix"

@@ -112,14 +112,7 @@ func NewCLIConfig(cluster string) *CLIConfig {
 //  4) Default AWS Profile - attempts to use credentials (aws_access_key_id, aws_secret_access_key) or assume_role (role_arn, source_profile) from AWS profile name
 //    a) AWS_DEFAULT_PROFILE environment variable (defaults to 'default')
 //  5) EC2 Instance role
-func (cfg *CLIConfig) ToAWSSession(context *cli.Context) (*session.Session, error) {
-	return cfg.toAWSSessionWithConfig(context, &aws.Config{})
-}
-
-// ToAWSSessionWithConfig processes credential order of precedence
-// The argument svcConfig is needed to allow important unit tests to work
-// (for example: assume role)
-func (cfg *CLIConfig) toAWSSessionWithConfig(context *cli.Context, svcConfig *aws.Config) (*session.Session, error) {
+func (cfg *CLIConfig) ToAWSSession(context *cli.Context, svcConfig *aws.Config) (*session.Session, error) {
 
 	region, err := cfg.getRegion()
 
