@@ -23,6 +23,7 @@ import (
 // Client defines methods to interact with the CloudWatch API interface.
 type Client interface {
 	FilterAllLogEvents(*cloudwatchlogs.FilterLogEventsInput, func([]*cloudwatchlogs.FilteredLogEvent)) error
+	CreateLogGroup(*string) error
 }
 
 // ec2Client implements EC2Client
@@ -47,5 +48,12 @@ func (c *cwLogsClient) FilterAllLogEvents(input *cloudwatchlogs.FilterLogEventsI
 			action(page.Events)
 			return !lastPage
 		})
+	return err
+}
+
+func (c *cwLogsClient) CreateLogGroup(group *string) error {
+	_, err := c.client.CreateLogGroup(&cloudwatchlogs.CreateLogGroupInput{
+		LogGroupName: group,
+	})
 	return err
 }
