@@ -20,6 +20,7 @@ import (
 	composecontainer "github.com/aws/amazon-ecs-cli/ecs-cli/modules/cli/compose/container"
 	"github.com/aws/amazon-ecs-cli/ecs-cli/modules/cli/compose/entity/types"
 	"github.com/aws/amazon-ecs-cli/ecs-cli/modules/cli/logs"
+	"github.com/aws/amazon-ecs-cli/ecs-cli/modules/clients/aws/cloudwatchlogs"
 	"github.com/aws/amazon-ecs-cli/ecs-cli/modules/commands/flags"
 	"github.com/aws/amazon-ecs-cli/ecs-cli/modules/config"
 	"github.com/aws/amazon-ecs-cli/ecs-cli/modules/utils/cache"
@@ -463,7 +464,7 @@ func ValidateFargateParams(ecsParams *utils.ECSParams, launchType string) error 
 // OptionallyCreateLogs creates CW log groups if the --create-log-group flag is present.
 func OptionallyCreateLogs(entity ProjectEntity) error {
 	if entity.Context().CLIContext.Bool(flags.CreateLogsFlag) {
-		err := logs.CreateLogGroups(entity.TaskDefinition(), entity.Context().CLIParams)
+		err := logs.CreateLogGroups(entity.TaskDefinition(), cloudwatchlogs.NewLogClientFactory(entity.Context().CLIParams))
 		if err != nil {
 			return err
 		}

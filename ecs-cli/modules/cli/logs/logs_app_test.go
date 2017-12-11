@@ -17,6 +17,7 @@ import (
 	"flag"
 	"testing"
 
+	"github.com/aws/amazon-ecs-cli/ecs-cli/modules/clients/aws/cloudwatchlogs/mock"
 	"github.com/aws/amazon-ecs-cli/ecs-cli/modules/clients/aws/ecs/mock"
 	"github.com/aws/amazon-ecs-cli/ecs-cli/modules/commands/flags"
 	"github.com/aws/amazon-ecs-cli/ecs-cli/modules/config"
@@ -388,4 +389,25 @@ func TestLogsRequestTaskNotFound(t *testing.T) {
 
 	_, _, err = logsRequest(context, mockECS, params)
 	assert.Error(t, err, "Expected error getting logs")
+}
+
+/* Create Logs */
+
+func TestCreateLogGroups(t *testing.T) {
+	taskDef := dummyTaskDef([]*ecs.ContainerDefinition{
+		dummyContainerDef(logRegion1, logGroup1, logPrefix1, "awslogs", containerName, containerImage),
+	})
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockLogFactory := mock_cloudwatchlogs.NewMockLogClientFactory(ctrl)
+	mockLogClient := mock_cloudwatchlogs.NewMockClient(ctrl)
+
+	gomock.InOrder(
+		mockLogFactory.EXPECT().Get(logRegion1).Return(mockLogClient),
+		mockLogClient.EXPECT().CreateLogGroup(gomock.Any()),
+	)
+
+	err := CreateLogGroups(taskDef, mockLogFactory)
+	assert.NoError(t, err, "Unexpect error in call to CreateLogGroups()")
 }

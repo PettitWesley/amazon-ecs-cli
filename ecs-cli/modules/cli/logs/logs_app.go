@@ -293,19 +293,14 @@ func logConfigMisMatchError(taskDef *ecs.TaskDefinition, fieldName string) error
 /* Create Logs */
 
 // CreateLogGroups creates any needed log groups for the task definition to use CloudWatch Logs
-func CreateLogGroups(taskDef *ecs.TaskDefinition, cliParams *config.CLIParams) error {
-	logClientForRegion := make(map[string]cwlogsclient.Client)
+func CreateLogGroups(taskDef *ecs.TaskDefinition, logClientFactory cwlogsclient.LogClientFactory) error {
 	for _, container := range taskDef.ContainerDefinitions {
 		logConfig, err := getContainerLogConfig(container)
 		if err != nil {
 			return err
 		}
 		region := aws.StringValue(logConfig.logRegion)
-		client, ok := logClientForRegion[region]
-		if !ok {
-			client = cwlogsclient.NewCloudWatchLogsClient(cliParams, region)
-			logClientForRegion[region] = client
-		}
+		client := logClientFactory.Get(region)
 		err = client.CreateLogGroup(logConfig.logGroup)
 		if err != nil {
 			if aerr, ok := err.(awserr.Error); ok {
@@ -319,10 +314,6 @@ func CreateLogGroups(taskDef *ecs.TaskDefinition, cliParams *config.CLIParams) e
 			logrus.Infof("Created Log Group %s in %s", aws.StringValue(logConfig.logGroup), region)
 		}
 
-	}
-
-	if len(logClientForRegion) > 1 {
-		logrus.Warn("The log configuration specified will send logs to multiple AWS Regions")
 	}
 	return nil
 }
