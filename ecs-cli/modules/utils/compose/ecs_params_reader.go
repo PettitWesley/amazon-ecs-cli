@@ -18,6 +18,7 @@ package utils
 import (
 	"io/ioutil"
 	"os"
+	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/ecs"
@@ -52,6 +53,36 @@ type ContainerDef struct {
 	Cpu               int64                  `yaml:"cpu_shares"`
 	Memory            libYaml.MemStringorInt `yaml:"mem_limit"`
 	MemoryReservation libYaml.MemStringorInt `yaml:"mem_reservation"`
+	HealthCheck       HealthCheck            `yaml:"health_check"`
+}
+
+// HealthCheck holds the ECS container health check
+// https://docs.aws.amazon.com/AmazonECS/latest/APIReference/API_HealthCheck.html
+type HealthCheck struct {
+	ecs.HealthCheck
+}
+
+// healthcheck formats
+// all formats are mutually exclusive in their different fields
+
+type healthCheckECSFormat struct {
+	Command     []string `yaml:"command,omitempty"`
+	Timeout     int64    `yaml:"timeout,omitempty"`
+	Interval    int64    `yaml:"interval,omitempty"`
+	Retries     int64    `yaml:"retries,omitempty"`
+	StartPeriod int64    `yaml:"start_period,omitempty"`
+}
+
+type healthCheckComposeFormat struct {
+	Test        []string       `yaml:"test,omitempty"`
+	Timeout     *time.Duration `yaml:"timeout,omitempty"`
+	Interval    *time.Duration `yaml:"interval,omitempty"`
+	Retries     *uint64        `yaml:"retries,omitempty"`
+	StartPeriod *time.Duration `yaml:"start_period,omitempty"`
+}
+
+type healthCheckComposeAltFormat struct {
+	Test string `yaml:"test,omitempty"`
 }
 
 // TaskSize holds Cpu and Memory values needed for Fargate tasks
@@ -96,6 +127,45 @@ func (cd *ContainerDef) UnmarshalYAML(unmarshal func(interface{}) error) error {
 
 	*cd = ContainerDef(raw)
 	return nil
+}
+
+func (h *HealthCheck) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	var healthCheckECS healthCheckECSFormat
+	if err := unmarshal(&healthCheck); err != nil {
+		return err
+	}
+
+	var healthCheckCompose healthCheckComposeFormat
+	if err := unmarshal(&healthCheckCompose); err != nil {
+		return err
+	}
+
+	var testCommandAltFormat healthCheckComposeAltFormat
+	if err := unmarshal(&testCommandAltFormat); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// toHealthCheck methods convert the different formats to the ECS Health check
+
+func (h *healthCheckECSFormat) toHealthCheck(healthCheck *HealthCheck) {
+	healthCheck.SetCommand(aws.StringSlice(h.Command))
+	healthCheck.SetRetries(h.Retries)
+	healthCheck.SetTimeout(h.Timeout)
+	healthCheck.SetInterval(h.Interval)
+	healthCheck.SetStartPeriod(h.StartPeriod)
+}
+
+func (h *healthCheckComposeFormat) toHealthCheck(healthCheck *HealthCheck) {
+
+}
+
+func (h *healthCheckComposeAltFormat) toHealthCheck(healthCheck *HealthCheck) {
+	// specifying health check command as string wraps it in /bin/sh
+	command := []string{"CMD-SHELL", h.Test}
+	healthCheck.SetCommand(aws.StringSlice(command))
 }
 
 // ReadECSParams parses the ecs-params.yml file and puts it into an ECSParams struct.
