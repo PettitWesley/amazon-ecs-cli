@@ -213,6 +213,24 @@ func getWorkingDir(fileName string) (string, error) {
 	return filepath.Dir(pwd), nil
 }
 
+func convertToHealthCheck(healthCheckConfig *types.HealthCheckConfig) *ecs.HealthCheck {
+	ecsHealthcheck := &ecs.HealthCheck{
+		Command: aws.StringSlice(healthCheckConfig.Test),
+	}
+	// optional fields with defaults provided by ECS
+	if healthCheckConfig.Interval != nil {
+		ecsHealthcheck.Interval = adapter.ConvertToTimeInSeconds(healthCheckConfig.Interval)
+	}
+	if healthCheckConfig.Retries != nil {
+		ecsHealthcheck.Retries = aws.Int64(int64(*healthCheckConfig.Retries))
+	}
+	if healthCheckConfig.Timeout != nil {
+		ecsHealthcheck.Timeout = adapter.ConvertToTimeInSeconds(healthCheckConfig.Timeout)
+	}
+
+	return ecsHealthcheck
+}
+
 func convertPortConfigToECSMapping(portConfig types.ServicePortConfig) *ecs.PortMapping {
 	containerPort := int64(portConfig.Target)
 	hostPort := int64(portConfig.Published)
