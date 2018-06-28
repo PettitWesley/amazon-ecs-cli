@@ -25,6 +25,7 @@ import (
 	"github.com/docker/cli/cli/compose/types"
 	libYaml "github.com/docker/libcompose/yaml"
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v2"
 )
 
@@ -54,7 +55,7 @@ type ContainerDef struct {
 	Cpu               int64                  `yaml:"cpu_shares"`
 	Memory            libYaml.MemStringorInt `yaml:"mem_limit"`
 	MemoryReservation libYaml.MemStringorInt `yaml:"mem_reservation"`
-	HealthCheck       HealthCheck            `yaml:"health_check"`
+	HealthCheck       HealthCheck            `yaml:"healthcheck"`
 }
 
 // HealthCheck holds the ECS container health check
@@ -133,22 +134,24 @@ func (h *HealthCheck) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	healthCheck := HealthCheck{}
 
 	var healthCheckCompose healthCheckComposeFormat
-	if err := unmarshal(&healthCheckCompose); err != nil {
-		return err
+	if err := unmarshal(&healthCheckCompose.HealthCheckConfig); err != nil {
+		logrus.Warn(err)
 	}
 	healthCheckCompose.toHealthCheck(&healthCheck)
 
 	var healthCheckECS healthCheckECSFormat
 	if err := unmarshal(&healthCheckECS); err != nil {
-		return err
+		logrus.Warn(err)
 	}
 	healthCheckECS.toHealthCheck(&healthCheck)
 
 	var testCommandAltFormat healthCheckWithTestAsString
 	if err := unmarshal(&testCommandAltFormat); err != nil {
-		return err
+		logrus.Warn(err)
 	}
 	testCommandAltFormat.toHealthCheck(&healthCheck)
+	logrus.Info("The Healthcheck is:")
+	logrus.Info(healthCheck)
 
 	*h = healthCheck
 
@@ -156,21 +159,36 @@ func (h *HealthCheck) UnmarshalYAML(unmarshal func(interface{}) error) error {
 }
 
 func (h *healthCheckECSFormat) toHealthCheck(healthCheck *HealthCheck) {
-	healthCheck.Command = h.Command
-	healthCheck.Interval = h.Interval
-	healthCheck.Retries = h.Retries
-	healthCheck.StartPeriod = h.StartPeriod
-	healthCheck.Timeout = h.Timeout
+	logrus.Infof("ECS Format: %v", *h)
+	if len(h.Command) > 0 {
+		healthCheck.Command = h.Command
+	}
+	if h.Interval != nil && *h.Interval != 0 {
+		healthCheck.Interval = h.Interval
+	}
+	if h.Retries != nil && *h.Retries != 0 {
+		healthCheck.Retries = h.Retries
+	}
+	if h.StartPeriod != nil && *h.StartPeriod != 0 {
+		healthCheck.StartPeriod = h.StartPeriod
+	}
+	if h.Timeout != nil && *h.Timeout != 0 {
+		healthCheck.Timeout = h.Timeout
+	}
 }
 
 func (h *healthCheckComposeFormat) toHealthCheck(healthCheck *HealthCheck) {
+	logrus.Infof("Compose Format: %v", *h)
 	healthCheck.HealthCheck = *adapter.ConvertToHealthCheck(&h.HealthCheckConfig)
 }
 
 func (h *healthCheckWithTestAsString) toHealthCheck(healthCheck *HealthCheck) {
+	logrus.Infof("Test-string Format: %v", *h)
 	// specifying health check command as string wraps it in /bin/sh
-	command := []string{"CMD-SHELL", h.Test}
-	healthCheck.SetCommand(aws.StringSlice(command))
+	if h.Test != "" {
+		command := []string{"CMD-SHELL", h.Test}
+		healthCheck.SetCommand(aws.StringSlice(command))
+	}
 }
 
 // ReadECSParams parses the ecs-params.yml file and puts it into an ECSParams struct.
