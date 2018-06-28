@@ -18,10 +18,11 @@ package utils
 import (
 	"io/ioutil"
 	"os"
-	"time"
 
+	"github.com/aws/amazon-ecs-cli/ecs-cli/modules/cli/compose/adapter"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/ecs"
+	"github.com/docker/cli/cli/compose/types"
 	libYaml "github.com/docker/libcompose/yaml"
 	"github.com/pkg/errors"
 	"gopkg.in/yaml.v2"
@@ -64,24 +65,19 @@ type HealthCheck struct {
 
 // healthcheck formats
 // all formats are mutually exclusive in their different fields
+type healthCheckComposeFormat struct {
+	types.HealthCheckConfig
+}
 
 type healthCheckECSFormat struct {
-	Command     []string `yaml:"command,omitempty"`
-	Timeout     int64    `yaml:"timeout,omitempty"`
-	Interval    int64    `yaml:"interval,omitempty"`
-	Retries     int64    `yaml:"retries,omitempty"`
-	StartPeriod int64    `yaml:"start_period,omitempty"`
+	Command     []*string `yaml:"command,omitempty"`
+	Timeout     *int64    `yaml:"timeout,omitempty"`
+	Interval    *int64    `yaml:"interval,omitempty"`
+	Retries     *int64    `yaml:"retries,omitempty"`
+	StartPeriod *int64    `yaml:"start_period,omitempty"`
 }
 
-type healthCheckComposeFormat struct {
-	Test        []string       `yaml:"test,omitempty"`
-	Timeout     *time.Duration `yaml:"timeout,omitempty"`
-	Interval    *time.Duration `yaml:"interval,omitempty"`
-	Retries     *uint64        `yaml:"retries,omitempty"`
-	StartPeriod *time.Duration `yaml:"start_period,omitempty"`
-}
-
-type healthCheckComposeAltFormat struct {
+type healthCheckWithTestAsString struct {
 	Test string `yaml:"test,omitempty"`
 }
 
@@ -129,40 +125,49 @@ func (cd *ContainerDef) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	return nil
 }
 
+// HealthCheck.UnmarshalYAML is a custom unmarshaler for healthcheck that parses
+// both the docker compose and ecs inspired syntaxes
 func (h *HealthCheck) UnmarshalYAML(unmarshal func(interface{}) error) error {
-	var healthCheckECS healthCheckECSFormat
-	if err := unmarshal(&healthCheck); err != nil {
-		return err
-	}
+	// All of the different health check formats are mutually exclusive in each of their fields
+	// This makes parsing simple.
+	healthCheck := HealthCheck{}
 
 	var healthCheckCompose healthCheckComposeFormat
 	if err := unmarshal(&healthCheckCompose); err != nil {
 		return err
 	}
+	healthCheckCompose.toHealthCheck(&healthCheck)
 
-	var testCommandAltFormat healthCheckComposeAltFormat
+	var healthCheckECS healthCheckECSFormat
+	if err := unmarshal(&healthCheckECS); err != nil {
+		return err
+	}
+	healthCheckECS.toHealthCheck(&healthCheck)
+
+	var testCommandAltFormat healthCheckWithTestAsString
 	if err := unmarshal(&testCommandAltFormat); err != nil {
 		return err
 	}
+	testCommandAltFormat.toHealthCheck(&healthCheck)
+
+	*h = healthCheck
 
 	return nil
 }
 
-// toHealthCheck methods convert the different formats to the ECS Health check
-
 func (h *healthCheckECSFormat) toHealthCheck(healthCheck *HealthCheck) {
-	healthCheck.SetCommand(aws.StringSlice(h.Command))
-	healthCheck.SetRetries(h.Retries)
-	healthCheck.SetTimeout(h.Timeout)
-	healthCheck.SetInterval(h.Interval)
-	healthCheck.SetStartPeriod(h.StartPeriod)
+	healthCheck.Command = h.Command
+	healthCheck.Interval = h.Interval
+	healthCheck.Retries = h.Retries
+	healthCheck.StartPeriod = h.StartPeriod
+	healthCheck.Timeout = h.Timeout
 }
 
 func (h *healthCheckComposeFormat) toHealthCheck(healthCheck *HealthCheck) {
-
+	healthCheck.HealthCheck = *adapter.ConvertToHealthCheck(&h.HealthCheckConfig)
 }
 
-func (h *healthCheckComposeAltFormat) toHealthCheck(healthCheck *HealthCheck) {
+func (h *healthCheckWithTestAsString) toHealthCheck(healthCheck *HealthCheck) {
 	// specifying health check command as string wraps it in /bin/sh
 	command := []string{"CMD-SHELL", h.Test}
 	healthCheck.SetCommand(aws.StringSlice(command))
