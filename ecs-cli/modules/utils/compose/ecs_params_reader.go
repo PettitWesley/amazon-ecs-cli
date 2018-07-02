@@ -18,6 +18,7 @@ package utils
 import (
 	"io/ioutil"
 	"os"
+	"time"
 
 	"github.com/aws/amazon-ecs-cli/ecs-cli/modules/cli/compose/adapter"
 	"github.com/aws/aws-sdk-go/aws"
@@ -25,7 +26,6 @@ import (
 	"github.com/docker/cli/cli/compose/types"
 	libYaml "github.com/docker/libcompose/yaml"
 	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v2"
 )
 
@@ -66,8 +66,13 @@ type HealthCheck struct {
 
 // healthcheck formats
 // all formats are mutually exclusive in their different fields
+
 type healthCheckComposeFormat struct {
-	types.HealthCheckConfig
+	Test        []string       `yaml:"test,omitempty"`
+	Timeout     *time.Duration `yaml:"timeout,omitempty"`
+	Interval    *time.Duration `yaml:"interval,omitempty"`
+	Retries     *uint64        `yaml:"retries,omitempty"`
+	StartPeriod *time.Duration `yaml:"start_period,omitempty"`
 }
 
 type healthCheckECSFormat struct {
@@ -134,24 +139,16 @@ func (h *HealthCheck) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	healthCheck := HealthCheck{}
 
 	var healthCheckCompose healthCheckComposeFormat
-	if err := unmarshal(&healthCheckCompose.HealthCheckConfig); err != nil {
-		logrus.Warn(err)
-	}
+	unmarshal(&healthCheckCompose)
 	healthCheckCompose.toHealthCheck(&healthCheck)
 
 	var healthCheckECS healthCheckECSFormat
-	if err := unmarshal(&healthCheckECS); err != nil {
-		logrus.Warn(err)
-	}
+	unmarshal(&healthCheckECS)
 	healthCheckECS.toHealthCheck(&healthCheck)
 
 	var testCommandAltFormat healthCheckWithTestAsString
-	if err := unmarshal(&testCommandAltFormat); err != nil {
-		logrus.Warn(err)
-	}
+	unmarshal(&testCommandAltFormat)
 	testCommandAltFormat.toHealthCheck(&healthCheck)
-	logrus.Info("The Healthcheck is:")
-	logrus.Info(healthCheck)
 
 	*h = healthCheck
 
@@ -159,7 +156,6 @@ func (h *HealthCheck) UnmarshalYAML(unmarshal func(interface{}) error) error {
 }
 
 func (h *healthCheckECSFormat) toHealthCheck(healthCheck *HealthCheck) {
-	logrus.Infof("ECS Format: %v", *h)
 	if len(h.Command) > 0 {
 		healthCheck.Command = h.Command
 	}
@@ -178,12 +174,16 @@ func (h *healthCheckECSFormat) toHealthCheck(healthCheck *HealthCheck) {
 }
 
 func (h *healthCheckComposeFormat) toHealthCheck(healthCheck *HealthCheck) {
-	logrus.Infof("Compose Format: %v", *h)
-	healthCheck.HealthCheck = *adapter.ConvertToHealthCheck(&h.HealthCheckConfig)
+	healthCheck.HealthCheck = *adapter.ConvertToHealthCheck(&types.HealthCheckConfig{
+		Test:        h.Test,
+		Timeout:     h.Timeout,
+		Interval:    h.Interval,
+		Retries:     h.Retries,
+		StartPeriod: h.StartPeriod,
+	})
 }
 
 func (h *healthCheckWithTestAsString) toHealthCheck(healthCheck *HealthCheck) {
-	logrus.Infof("Test-string Format: %v", *h)
 	// specifying health check command as string wraps it in /bin/sh
 	if h.Test != "" {
 		command := []string{"CMD-SHELL", h.Test}
