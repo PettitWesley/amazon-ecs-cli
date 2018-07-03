@@ -16,8 +16,10 @@ package utils
 // ECS Params Reader is used to parse the ecs-params.yml file and marshal the data into the ECSParams struct
 
 import (
+	"fmt"
 	"io/ioutil"
 	"os"
+	"strconv"
 	"time"
 
 	"github.com/aws/amazon-ecs-cli/ecs-cli/modules/cli/compose/adapter"
@@ -64,8 +66,15 @@ type HealthCheck struct {
 	ecs.HealthCheck
 }
 
-// healthcheck formats
-// all formats are mutually exclusive in their different fields
+// healthCheckFormat is used to unmarshal the different healthcheck formats supported by ECS Params
+type healthCheckFormat struct {
+	Test        libYaml.Stringorslice
+	Command     libYaml.Stringorslice
+	Timeout     string `yaml:"timeout,omitempty"`
+	Interval    string `yaml:"interval,omitempty"`
+	Retries     int64  `yaml:"retries,omitempty"`
+	StartPeriod string `yaml:"start_period,omitempty"`
+}
 
 type healthCheckComposeFormat struct {
 	Test        []string       `yaml:"test,omitempty"`
@@ -138,22 +147,101 @@ func (h *HealthCheck) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	// This makes parsing simple.
 	healthCheck := HealthCheck{}
 
-	var healthCheckCompose healthCheckComposeFormat
-	unmarshal(&healthCheckCompose)
-	healthCheckCompose.toHealthCheck(&healthCheck)
+	// set default value for retries
+	rawHealthCheck := healthCheckFormat{
+		Retries: 3,
+	}
+	if err := unmarshal(&rawHealthCheck); err != nil {
+		return err
+	}
 
-	var healthCheckECS healthCheckECSFormat
-	unmarshal(&healthCheckECS)
-	healthCheckECS.toHealthCheck(&healthCheck)
+	if len(rawHealthCheck.Command) > 0 && len(rawHealthCheck.Test) > 0 {
+		return fmt.Errorf("healthcheck.test and healthcheck.command can not both be specified")
+	}
 
-	var testCommandAltFormat healthCheckWithTestAsString
-	unmarshal(&testCommandAltFormat)
-	testCommandAltFormat.toHealthCheck(&healthCheck)
+	if len(rawHealthCheck.Command) > 0 {
+		parseHealthCheckCommand(rawHealthCheck.Command, &healthCheck)
+	}
+
+	if len(rawHealthCheck.Test) > 0 {
+		parseHealthCheckCommand(rawHealthCheck.Test, &healthCheck)
+	}
+
+	healthCheck.SetRetries(rawHealthCheck.Retries)
+
+	if timeout, err := parseHealthCheckTimeField(rawHealthCheck.Timeout); err == nil {
+		healthCheck.Timeout = timeout
+	} else {
+		return err
+	}
+
+	if startPeriod, err := parseHealthCheckTimeField(rawHealthCheck.StartPeriod); err == nil {
+		healthCheck.StartPeriod = startPeriod
+	} else {
+		return err
+	}
+
+	if interval, err := parseHealthCheckTimeField(rawHealthCheck.Interval); err == nil {
+		healthCheck.Interval = interval
+	} else {
+		return err
+	}
 
 	*h = healthCheck
 
 	return nil
 }
+
+// parses the command/test field for healthcheck
+func parseHealthCheckCommand(command []string, healthCheck *HealthCheck) {
+	if len(command) == 1 {
+		// command/test was specified as a string which wraps it in /bin/sh
+		healthCheck.SetCommand(aws.StringSlice([]string{
+			"CMD-SHELL",
+			command[0],
+		}))
+	} else {
+		healthCheck.SetCommand(aws.StringSlice(command))
+	}
+}
+
+// parses a health check time string which could be a duration or an integer
+func parseHealthCheckTimeField(field string) (*int64, error) {
+	if field != "" {
+		duration, err := time.ParseDuration(field)
+		if err == nil {
+			return adapter.ConvertToTimeInSeconds(&duration), nil
+		} else if val, err := strconv.ParseInt(field, 10, 64); err == nil {
+			return &val, nil
+		} else {
+			return nil, fmt.Errorf("Could not parse %s either as an integer or a duration (ex: 1m30s)", field)
+		}
+	}
+
+	return nil, nil
+}
+
+// func (h *HealthCheck) UnmarshalYAML(unmarshal func(interface{}) error) error {
+// 	// All of the different health check formats are mutually exclusive in each of their fields
+// 	// This makes parsing simple.
+// 	healthCheck := HealthCheck{}
+//
+// 	var healthCheckCompose healthCheckComposeFormat
+// 	unmarshal(&healthCheckCompose)
+// 	healthCheckCompose.toHealthCheck(&healthCheck)
+//
+// 	var healthCheckECS healthCheckECSFormat
+// 	unmarshal(&healthCheckECS)
+// 	healthCheckECS.toHealthCheck(&healthCheck)
+//
+// 	var testCommandAltFormat healthCheckWithTestAsString
+// 	unmarshal(&testCommandAltFormat)
+// 	testCommandAltFormat.toHealthCheck(&healthCheck)
+//
+// 	*h = healthCheck
+//
+// 	return nil
+// }
 
 func (h *healthCheckECSFormat) toHealthCheck(healthCheck *HealthCheck) {
 	if len(h.Command) > 0 {

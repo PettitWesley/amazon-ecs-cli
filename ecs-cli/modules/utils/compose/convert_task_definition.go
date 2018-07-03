@@ -175,6 +175,7 @@ func convertToContainerDef(inputCfg *adapter.ContainerConfig, ecsContainerDef *C
 
 		ecsMemResInMB := adapter.ConvertToMemoryInMB(int64(ecsContainerDef.MemoryReservation))
 		memRes = getResourceValue(inputCfg.Name, memRes, ecsMemResInMB)
+		overrideHealthCheck(outputContDef, ecsContainerDef.HealthCheck.HealthCheck)
 	}
 
 	if mem < memRes {
@@ -197,6 +198,28 @@ func convertToContainerDef(inputCfg *adapter.ContainerConfig, ecsContainerDef *C
 	}
 
 	return outputContDef, nil
+}
+
+// ECS Params healthcheck overrides the healthcheck from docker compose
+func overrideHealthCheck(outputContDef *ecs.ContainerDefinition, ecsParamsHealth ecs.HealthCheck) {
+	if outputContDef.HealthCheck == nil {
+		outputContDef.SetHealthCheck(&ecsParamsHealth)
+	}
+	if len(ecsParamsHealth.Command) > 0 {
+		outputContDef.HealthCheck.SetCommand(ecsParamsHealth.Command)
+	}
+	if ecsParamsHealth.Interval != nil {
+		outputContDef.HealthCheck.Interval = ecsParamsHealth.Interval
+	}
+	if ecsParamsHealth.Retries != nil {
+		outputContDef.HealthCheck.Retries = ecsParamsHealth.Retries
+	}
+	if ecsParamsHealth.StartPeriod != nil {
+		outputContDef.HealthCheck.StartPeriod = ecsParamsHealth.StartPeriod
+	}
+	if ecsParamsHealth.Timeout != nil {
+		outputContDef.HealthCheck.Timeout = ecsParamsHealth.Timeout
+	}
 }
 
 func getResourceValue(serviceName string, inputVal, ecsVal int64) int64 {
