@@ -389,6 +389,102 @@ func TestCreateServiceDiscoveryWithECSParamsExistingPublicNamespaceByName(t *tes
 	testCreateServiceDiscovery(t, "awsvpc", input, emptyContext(), validateNamespace, validateSDS, false)
 }
 
+func TestUpdateServiceDiscovery(t *testing.T) {
+	input := &utils.ServiceDiscovery{
+		ServiceDiscoveryService: utils.ServiceDiscoveryService{
+			DNSConfig: utils.DNSConfig{
+				TTL: aws.Int64(120),
+			},
+			HealthCheckCustomConfig: utils.HealthCheckCustomConfig{
+				FailureThreshold: aws.Int64(2),
+			},
+		},
+	}
+
+	existingParameters := []*sdk.Parameter{
+		&sdk.Parameter{
+			ParameterKey:   aws.String(parameterKeySDSDescription),
+			ParameterValue: aws.String(testDescription),
+		},
+		&sdk.Parameter{
+			ParameterKey:   aws.String(parameterKeySDSName),
+			ParameterValue: aws.String(testServiceName),
+		},
+		&sdk.Parameter{
+			ParameterKey:   aws.String(parameterKeyNamespaceID),
+			ParameterValue: aws.String(testNamespaceID),
+		},
+		&sdk.Parameter{
+			ParameterKey:   aws.String(parameterKeyDNSType),
+			ParameterValue: aws.String(servicediscovery.RecordTypeA),
+		},
+		&sdk.Parameter{
+			ParameterKey:   aws.String(parameterKeyDNSTTL),
+			ParameterValue: aws.String("60"),
+		},
+		&sdk.Parameter{
+			ParameterKey:   aws.String(parameterKeyHealthCheckCustomConfigFailureThreshold),
+			ParameterValue: aws.String("1"),
+		},
+	}
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockCloudformation := mock_cloudformation.NewMockCloudformationClient(ctrl)
+	gomock.InOrder(
+		mockCloudformation.EXPECT().GetStackParameters(testSDSStackName).Return(existingParameters, nil),
+		mockCloudformation.EXPECT().UpdateStack(testSDSStackName, gomock.Any()).Do(func(x, y interface{}) {
+			cfnParams := y.(*cloudformation.CfnStackParams)
+			validateCFNParam("120", parameterKeyDNSTTL, cfnParams, t)
+			validateCFNParam("2", parameterKeyHealthCheckCustomConfigFailureThreshold, cfnParams, t)
+			validateUsePreviousValueSet(parameterKeyDNSType, cfnParams, t)
+			validateUsePreviousValueSet(parameterKeySDSDescription, cfnParams, t)
+			validateUsePreviousValueSet(parameterKeySDSName, cfnParams, t)
+			validateUsePreviousValueSet(parameterKeyNamespaceID, cfnParams, t)
+		}).Return("", nil),
+		mockCloudformation.EXPECT().WaitUntilUpdateComplete(testSDSStackName).Return(nil),
+	)
+
+	err := update(emptyContext(), "awsvpc", testServiceName, testClusterName, mockCloudformation, input)
+	assert.NoError(t, err, "Unexpected error calling update")
+}
+
+func TestDeleteServiceDiscovery(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockCloudformation := mock_cloudformation.NewMockCloudformationClient(ctrl)
+	gomock.InOrder(
+		mockCloudformation.EXPECT().ValidateStackExists(testSDSStackName).Return(nil),
+		mockCloudformation.EXPECT().DeleteStack(testSDSStackName).Return(nil),
+		mockCloudformation.EXPECT().WaitUntilDeleteComplete(testSDSStackName).Return(nil),
+	)
+
+	err := delete(emptyContext(), mockCloudformation, testServiceName, testServiceName, testClusterName)
+	assert.NoError(t, err, "Unexpected error calling delete")
+}
+
+func TestDeleteServiceDiscoveryDeleteNamespace(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockCloudformation := mock_cloudformation.NewMockCloudformationClient(ctrl)
+	gomock.InOrder(
+		mockCloudformation.EXPECT().ValidateStackExists(testSDSStackName).Return(nil),
+		mockCloudformation.EXPECT().DeleteStack(testSDSStackName).Return(nil),
+		mockCloudformation.EXPECT().WaitUntilDeleteComplete(testSDSStackName).Return(nil),
+		mockCloudformation.EXPECT().ValidateStackExists(testNamespaceStackName).Return(nil),
+		mockCloudformation.EXPECT().DeleteStack(testNamespaceStackName).Return(nil),
+		mockCloudformation.EXPECT().WaitUntilDeleteComplete(testNamespaceStackName).Return(nil),
+	)
+
+	flagSet := flag.NewFlagSet("create-sd", 0)
+	flagSet.Bool(flags.DeletePrivateNamespaceFlag, true, "")
+
+	context := cli.NewContext(nil, flagSet, nil)
+
+	err := delete(context, mockCloudformation, testServiceName, testServiceName, testClusterName)
+	assert.NoError(t, err, "Unexpected error calling delete")
+}
+
 func testCreateServiceDiscovery(t *testing.T, networkMode string, ecsParamsSD *utils.ServiceDiscovery, c *cli.Context, validateNamespace validateNamespaceParamsFunc, validateSDS validateSDSParamsFunc, createNamespace bool) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -481,4 +577,10 @@ func validateCFNParam(expectedValue, paramKey string, cfnParams *cloudformation.
 	observedValue, err := cfnParams.GetParameter(paramKey)
 	assert.NoError(t, err, "Unexpected error getting cfn parameter")
 	assert.Equal(t, expectedValue, aws.StringValue(observedValue.ParameterValue), fmt.Sprintf("Expected %s to be %s", paramKey, expectedValue))
+}
+
+func validateUsePreviousValueSet(paramKey string, cfnParams *cloudformation.CfnStackParams, t *testing.T) {
+	observedValue, err := cfnParams.GetParameter(paramKey)
+	assert.NoError(t, err, "Unexpected error getting cfn parameter")
+	assert.True(t, aws.BoolValue(observedValue.UsePreviousValue), "Expected UsePreviousValue to be true")
 }

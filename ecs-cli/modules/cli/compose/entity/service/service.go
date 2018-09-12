@@ -17,6 +17,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/aws/amazon-ecs-cli/ecs-cli/modules/cli/compose/context"
 	"github.com/aws/amazon-ecs-cli/ecs-cli/modules/cli/compose/entity"
@@ -54,6 +55,12 @@ const (
 
 // make servicediscovery.Create easily mockable in tests
 var servicediscoveryCreate servicediscovery.CreateFunc = servicediscovery.Create
+
+// make servicediscovery.Update easily mockable in tests
+var servicediscoveryUpdate servicediscovery.UpdateFunc = servicediscovery.Update
+
+// make servicediscovery.Delete easily mockable in tests
+var servicediscoveryDelete servicediscovery.DeleteFunc = servicediscovery.Delete
 
 // NewService creates an instance of a Service and also sets up a cache for task definition
 func NewService(ecsContext *context.ECSContext) entity.ProjectEntity {
@@ -237,6 +244,20 @@ func (s *Service) Up() error {
 		return s.startService()
 	}
 
+	// Update Service
+	if err = s.updateExistingService(ecsService, newTaskDefinition); err != nil {
+		return err
+	}
+
+	// Update Service Discovery
+	if s.Context().CLIContext.Bool(flags.UpdateServiceDiscoveryFlag) {
+		return servicediscoveryUpdate(aws.StringValue(newTaskDefinition.NetworkMode), entity.GetServiceName(s), s.Context())
+	}
+
+	return nil
+}
+
+func (s *Service) updateExistingService(ecsService *ecs.Service, newTaskDefinition *ecs.TaskDefinition) error {
 	if s.Context().CLIContext.Bool(flags.EnableServiceDiscoveryFlag) {
 		return fmt.Errorf("Service Discovery can not be enabled on an existing ECS Service")
 	}
@@ -345,7 +366,25 @@ func (s *Service) Down() error {
 	if err = s.Context().ECSClient.DeleteService(ecsServiceName); err != nil {
 		return err
 	}
-	return waitForServiceTasks(s, ecsServiceName)
+	if err = waitForServiceTasks(s, ecsServiceName); err != nil {
+		return err
+	}
+
+	// delete Service Discovery resources if they exist
+	if len(ecsService.ServiceRegistries) > 0 {
+		// Sleep is needed so that Service Discovery Service deletion succeeds
+		// An SDS that is in use can not be deleted; there seems to be a slight delay
+		// between when ecs:DeleteService succeeds and when ECS actually frees the SDS
+		// 10 seconds is an arbitrary amount of time that always worked in my testing
+		time.Sleep(10 * time.Second)
+		err = servicediscoveryDelete(ecsServiceName, s.Context())
+		if err != nil {
+			// SD deletion errors are logged but aren't fatal.
+			log.Errorf("Problem deleting Service Discovery resources: %v", err)
+		}
+	}
+
+	return nil
 }
 
 // Run expects to issue a command override and start containers. But that doesnt apply to the context of ECS Services
