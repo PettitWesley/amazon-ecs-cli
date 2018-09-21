@@ -137,7 +137,7 @@ func serviceDiscoveryFlags() []cli.Flag {
 	return []cli.Flag{
 		cli.BoolFlag{
 			Name:  flags.EnableServiceDiscoveryFlag,
-			Usage: "Enable or modify service discovery configuration",
+			Usage: "Enable Service Discovery for your ECS Service",
 		},
 		cli.StringFlag{
 			Name:  flags.VpcIdFlag,
@@ -186,7 +186,7 @@ func updateServiceDiscoveryFlags() []cli.Flag {
 	return []cli.Flag{
 		cli.BoolFlag{
 			Name:  flags.UpdateServiceDiscoveryFlag,
-			Usage: "[Optional] Service Discovery - Update Service Discovery related settings. Only the Service Discovery Service settings DNS TTL and Failure Threshold can be updated.",
+			Usage: "[Optional] Service Discovery - Allows update of Service Discovery Service settings DNS TTL and Failure Threshold.",
 		},
 	}
 }
