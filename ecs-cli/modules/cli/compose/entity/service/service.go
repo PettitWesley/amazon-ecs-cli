@@ -17,12 +17,12 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/aws/amazon-ecs-cli/ecs-cli/modules/cli/compose/context"
 	"github.com/aws/amazon-ecs-cli/ecs-cli/modules/cli/compose/entity"
 	"github.com/aws/amazon-ecs-cli/ecs-cli/modules/cli/compose/entity/types"
 	"github.com/aws/amazon-ecs-cli/ecs-cli/modules/cli/servicediscovery"
+	"github.com/aws/amazon-ecs-cli/ecs-cli/modules/clients/aws/route53"
 	"github.com/aws/amazon-ecs-cli/ecs-cli/modules/commands/flags"
 	"github.com/aws/amazon-ecs-cli/ecs-cli/modules/utils"
 	"github.com/aws/amazon-ecs-cli/ecs-cli/modules/utils/cache"
@@ -61,6 +61,9 @@ var servicediscoveryUpdate servicediscovery.UpdateFunc = servicediscovery.Update
 
 // make servicediscovery.Delete easily mockable in tests
 var servicediscoveryDelete servicediscovery.DeleteFunc = servicediscovery.Delete
+
+// make servicediscovery.Delete easily mockable in tests
+var waitUntilSDSDeletable route53.WaitUntilSDSDeletableFunc = route53.WaitUntilSDSDeletable
 
 // NewService creates an instance of a Service and also sets up a cache for task definition
 func NewService(ecsContext *context.ECSContext) entity.ProjectEntity {
@@ -372,19 +375,24 @@ func (s *Service) Down() error {
 
 	// delete Service Discovery resources if they exist
 	if len(ecsService.ServiceRegistries) > 0 {
-		// Sleep is needed so that Service Discovery Service deletion succeeds
-		// An SDS that is in use can not be deleted; there seems to be a slight delay
-		// between when ecs:DeleteService succeeds and when ECS actually frees the SDS
-		// 10 seconds is an arbitrary amount of time that always worked in my testing
-		time.Sleep(10 * time.Second)
-		err = servicediscoveryDelete(ecsServiceName, s.Context())
-		if err != nil {
+		log.Info("Trying to delete any Service Discovery Resources that were created by the ECS CLI...")
+		registryArn := aws.StringValue(ecsService.ServiceRegistries[0].RegistryArn)
+		if err = s.deleteServiceDiscoveryResources(registryArn, ecsServiceName); err != nil {
 			// SD deletion errors are logged but aren't fatal.
 			log.Errorf("Problem deleting Service Discovery resources: %v", err)
 		}
 	}
 
 	return nil
+}
+
+func (s *Service) deleteServiceDiscoveryResources(registryArn, ecsServiceName string) error {
+	sdsID := getSDSIDFromArn(registryArn)
+	if err := waitUntilSDSDeletable(sdsID, s.Context().CommandConfig); err != nil {
+		return err
+	}
+	return servicediscoveryDelete(ecsServiceName, s.Context())
+
 }
 
 // Run expects to issue a command override and start containers. But that doesnt apply to the context of ECS Services
@@ -617,4 +625,8 @@ func (s *Service) updateService(count int64) error {
 
 	log.WithFields(fields).Info("Updated ECS service successfully")
 	return waitForServiceTasks(s, serviceName)
+}
+
+func getSDSIDFromArn(sdsARN string) string {
+	return strings.Split(sdsARN, "/")[1]
 }
