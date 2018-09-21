@@ -567,6 +567,18 @@ func TestDeleteServiceDiscoveryDeleteNamespace(t *testing.T) {
 	assert.NoError(t, err, "Unexpected error calling delete")
 }
 
+func TestDeleteServiceDiscoveryStackNotFoundError(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockCloudformation := mock_cloudformation.NewMockCloudformationClient(ctrl)
+	gomock.InOrder(
+		mockCloudformation.EXPECT().ValidateStackExists(testSDSStackName).Return(fmt.Errorf("Stack not found")),
+	)
+
+	err := delete(emptyContext(), mockCloudformation, testServiceName, testServiceName, testClusterName)
+	assert.Error(t, err, "Expected error calling delete")
+}
+
 func testCreateServiceDiscovery(t *testing.T, networkMode string, ecsParamsSD *utils.ServiceDiscovery, c *cli.Context, validateNamespace validateNamespaceParamsFunc, validateSDS validateSDSParamsFunc, createNamespace bool) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
