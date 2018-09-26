@@ -647,10 +647,10 @@ func testCreateServiceDiscovery(t *testing.T, networkMode string, ecsParamsSD *u
 		Cluster: testClusterName,
 	}
 
-	sdsARN, err := create(c, networkMode, testServiceName, mockCloudformation, ecsParamsSD, config)
+	registry, err := create(c, networkMode, testServiceName, mockCloudformation, ecsParamsSD, config)
 
 	assert.NoError(t, err, "Unexpected Error calling create")
-	assert.Equal(t, testSDSARN, aws.StringValue(sdsARN), "Expected SDS ARN to match")
+	assert.Equal(t, testSDSARN, aws.StringValue(registry.RegistryArn), "Expected SDS ARN to match")
 
 }
 

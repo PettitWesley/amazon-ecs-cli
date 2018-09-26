@@ -22,6 +22,7 @@ import (
 	"github.com/aws/amazon-ecs-cli/ecs-cli/modules/config"
 	utils "github.com/aws/amazon-ecs-cli/ecs-cli/modules/utils/compose"
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/service/ecs"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
@@ -39,11 +40,11 @@ const (
 
 // CreateFunc is the interface/signature for Create
 // This helps when writing code in other packages that need to mock Create (specifically it's a nicety that helps IDE features work)
-type CreateFunc func(networkMode, serviceName string, c *context.ECSContext) (*string, error)
+type CreateFunc func(networkMode, serviceName string, c *context.ECSContext) (*ecs.ServiceRegistry, error)
 
 // Create creates a DNS namespace (or uses an existing one) and creates a Service Discovery Service
 // The Service Discovery ARN is returned so that it can be used to enable ECS Service Discovery
-func Create(networkMode, serviceName string, c *context.ECSContext) (*string, error) {
+func Create(networkMode, serviceName string, c *context.ECSContext) (*ecs.ServiceRegistry, error) {
 	cfnClient := cloudformation.NewCloudformationClient(c.CommandConfig)
 
 	var ecsParamsSD *utils.ServiceDiscovery
@@ -146,28 +147,28 @@ func deleteStack(stackName, projectName, resource string, cfnClient cloudformati
 	return cfnClient.WaitUntilDeleteComplete(stackName)
 }
 
-func create(c *cli.Context, networkMode, serviceName string, cfnClient cloudformation.CloudformationClient, ecsParamsSD *utils.ServiceDiscovery, config *config.CommandConfig) (*string, error) {
+func create(c *cli.Context, networkMode, serviceName string, cfnClient cloudformation.CloudformationClient, ecsParamsSD *utils.ServiceDiscovery, config *config.CommandConfig) (*ecs.ServiceRegistry, error) {
 	err := validateNameAndIdExclusive(c, ecsParamsSD)
 	if err != nil {
 		return nil, err
 	}
-	input, err := mergeSDFlagsAndInput(c, ecsParamsSD)
+	mergedInput, err := mergeSDFlagsAndInput(c, ecsParamsSD)
 	if err != nil {
 		return nil, err
 	}
-	err = validateMergedSDInputFields(input, networkMode)
+	err = validateMergedSDInputFields(mergedInput, networkMode)
 	if err != nil {
 		return nil, err
 	}
-	namespaceWarningsWhenIDSpecified(input)
+	namespaceWarningsWhenIDSpecified(mergedInput)
 
-	namespaceID, err := getOrCreateNamespace(c, networkMode, serviceName, cfnClient, input, config)
+	namespaceID, err := getOrCreateNamespace(c, networkMode, serviceName, cfnClient, mergedInput, config)
 	if err != nil {
 		return nil, err
 	}
 
 	// create SDS
-	sdsParams := getSDSCFNParams(aws.StringValue(namespaceID), serviceName, networkMode, input)
+	sdsParams := getSDSCFNParams(aws.StringValue(namespaceID), serviceName, networkMode, mergedInput)
 	if err := sdsParams.Validate(); err != nil {
 		return nil, err
 	}
@@ -180,8 +181,13 @@ func create(c *cli.Context, networkMode, serviceName string, cfnClient cloudform
 	logrus.Info("Waiting for the Service Discovery Service to be created...")
 	cfnClient.WaitUntilCreateComplete(sdsStackName)
 
-	// Return the ID of the SDS we just created
-	return getOutputIDFromStack(cfnClient, sdsStackName, cfnTemplateOutputSDSARN)
+	registryARN, err := getOutputIDFromStack(cfnClient, sdsStackName, cfnTemplateOutputSDSARN)
+	serviceRegistry := &ecs.ServiceRegistry{
+		RegistryArn:   registryARN,
+		ContainerName: aws.String(mergedInput.ContainerName),
+		ContainerPort: mergedInput.ContainerPort,
+	}
+	return serviceRegistry, err
 }
 
 func createNamespace(c *cli.Context, networkMode, serviceName, clusterName string, cfnClient cloudformation.CloudformationClient, input *utils.ServiceDiscovery) (*string, error) {

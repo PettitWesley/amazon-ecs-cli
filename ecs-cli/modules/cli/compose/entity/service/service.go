@@ -502,23 +502,14 @@ func (s *Service) createService() error {
 
 	if cliContext.Bool(flags.EnableServiceDiscoveryFlag) {
 		networkMode := aws.StringValue(s.TaskDefinition().NetworkMode)
-		containerName := aws.String(cliContext.String(flags.ServiceDiscoveryContainerNameFlag))
-		containerPort, err := getInt64FromCLIContext(s.Context(), flags.ServiceDiscoveryContainerPortFlag)
-		if err != nil {
-			return err
-		}
 
-		serviceRegistryARN, err := servicediscoveryCreate(networkMode, serviceName, s.Context())
+		serviceRegistry, err := servicediscoveryCreate(networkMode, serviceName, s.Context())
 		if err != nil {
 			return err
 		}
 
 		s.serviceRegistries = []*ecs.ServiceRegistry{
-			&ecs.ServiceRegistry{
-				RegistryArn:   serviceRegistryARN,
-				ContainerName: containerName,
-				ContainerPort: containerPort,
-			},
+			serviceRegistry,
 		}
 	}
 
