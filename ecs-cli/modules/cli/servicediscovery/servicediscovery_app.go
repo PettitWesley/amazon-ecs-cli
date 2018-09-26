@@ -182,9 +182,13 @@ func create(c *cli.Context, networkMode, serviceName string, cfnClient cloudform
 	cfnClient.WaitUntilCreateComplete(sdsStackName)
 
 	registryARN, err := getOutputIDFromStack(cfnClient, sdsStackName, cfnTemplateOutputSDSARN)
+	var containerName *string
+	if mergedInput.ContainerName != "" {
+		containerName = aws.String(mergedInput.ContainerName)
+	}
 	serviceRegistry := &ecs.ServiceRegistry{
 		RegistryArn:   registryARN,
-		ContainerName: aws.String(mergedInput.ContainerName),
+		ContainerName: containerName,
 		ContainerPort: mergedInput.ContainerPort,
 	}
 	return serviceRegistry, err
