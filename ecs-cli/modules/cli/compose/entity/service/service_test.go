@@ -694,8 +694,6 @@ func TestCreateWithServiceDiscoveryWithContainerNameAndPort(t *testing.T) {
 
 	flagSet := flag.NewFlagSet("ecs-cli-up", 0)
 	flagSet.Bool(flags.EnableServiceDiscoveryFlag, true, "")
-	flagSet.String(flags.ServiceDiscoveryContainerNameFlag, containerName, "")
-	flagSet.String(flags.ServiceDiscoveryContainerPortFlag, "80", "")
 
 	// Reset mockable function after test
 	nonMockedServicediscoveryCreate := servicediscoveryCreate
@@ -703,7 +701,9 @@ func TestCreateWithServiceDiscoveryWithContainerNameAndPort(t *testing.T) {
 
 	servicediscoveryCreate = func(networkMode, serviceName string, c *context.ECSContext) (*ecs.ServiceRegistry, error) {
 		return &ecs.ServiceRegistry{
-			RegistryArn: aws.String(sdsARN),
+			RegistryArn:   aws.String(sdsARN),
+			ContainerName: aws.String(containerName),
+			ContainerPort: aws.Int64(80),
 		}, nil
 	}
 
