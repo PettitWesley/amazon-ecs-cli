@@ -112,6 +112,7 @@ const (
 	RoleFlag                                = "role"
 	ComposeServiceTimeOutFlag               = "timeout"
 	ForceDeploymentFlag                     = "force-deployment"
+	DaemonFlag                              = "daemon"
 )
 
 // OptionalRegionAndProfileFlags provides these flags:
