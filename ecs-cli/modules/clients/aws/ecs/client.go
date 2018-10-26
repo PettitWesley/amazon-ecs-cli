@@ -43,7 +43,7 @@ type ECSClient interface {
 
 	// Service related
 	CreateService(serviceName string, createServiceInput *ecs.CreateServiceInput) error
-	UpdateService(serviceName, taskDefinitionName string, count int64, deploymentConfig *ecs.DeploymentConfiguration, networkConfig *ecs.NetworkConfiguration, healthCheckGracePeriod *int64, force bool) error
+	UpdateService(serviceName, taskDefinitionName string, count int64, deploymentConfig *ecs.DeploymentConfiguration, networkConfig *ecs.NetworkConfiguration, healthCheckGracePeriod *int64, daemon bool, force bool) error
 	DescribeService(serviceName string) (*ecs.DescribeServicesOutput, error)
 	DeleteService(serviceName string) error
 
@@ -143,13 +143,16 @@ func (c *ecsClient) CreateService(serviceName string, createServiceInput *ecs.Cr
 	return nil
 }
 
-func (c *ecsClient) UpdateService(serviceName, taskDefinition string, count int64, deploymentConfig *ecs.DeploymentConfiguration, networkConfig *ecs.NetworkConfiguration, healthCheckGracePeriod *int64, force bool) error {
+func (c *ecsClient) UpdateService(serviceName, taskDefinition string, count int64, deploymentConfig *ecs.DeploymentConfiguration, networkConfig *ecs.NetworkConfiguration, healthCheckGracePeriod *int64, daemon bool, force bool) error {
 	input := &ecs.UpdateServiceInput{
-		DesiredCount:            aws.Int64(count),
 		Service:                 aws.String(serviceName),
 		Cluster:                 aws.String(c.config.Cluster),
 		DeploymentConfiguration: deploymentConfig,
 		ForceNewDeployment:      &force,
+	}
+
+	if !daemon {
+		input.DesiredCount = aws.Int64(count)
 	}
 
 	if healthCheckGracePeriod != nil {

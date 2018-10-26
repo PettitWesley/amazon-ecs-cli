@@ -43,6 +43,7 @@ type Service struct {
 	loadBalancer     *ecs.LoadBalancer
 	role             string
 	healthCheckGP    *int64
+	daemon           bool
 }
 
 const (
@@ -59,7 +60,7 @@ func NewService(ecsContext *context.ECSContext) entity.ProjectEntity {
 	}
 }
 
-// LoadContext reads the ECS context set in NewService and loads DeploymentConfiguration and LoadBalancer
+// LoadContext reads the ECS context set in NewService and loads DeploymentConfiguration, LoadBalancer, and SchedulingStrategy
 // TODO: refactor to memoize s.Context().CLIContext, since that's the only
 // thing that LoadContext seems to care about? (even in getInt64FromCLIContext)
 func (s *Service) LoadContext() error {
@@ -75,6 +76,9 @@ func (s *Service) LoadContext() error {
 		MaximumPercent:        maxPercent,
 		MinimumHealthyPercent: minHealthyPercent,
 	}
+
+	// SchedulingStrategy
+	s.daemon = s.Context().CLIContext.Bool(flags.DaemonFlag)
 
 	// Load Balancer
 	role := s.Context().CLIContext.String(flags.RoleFlag)
@@ -274,7 +278,7 @@ func (s *Service) Up() error {
 
 	forceDeployment := s.Context().CLIContext.Bool(flags.ForceDeploymentFlag)
 
-	err = s.Context().ECSClient.UpdateService(ecsServiceName, newTaskDefinitionId, newCount, deploymentConfig, networkConfig, s.healthCheckGP, forceDeployment)
+	err = s.Context().ECSClient.UpdateService(ecsServiceName, newTaskDefinitionId, newCount, deploymentConfig, networkConfig, s.healthCheckGP, s.daemon, forceDeployment)
 	if err != nil {
 		return err
 	}
@@ -418,6 +422,11 @@ func (s *Service) buildCreateServiceInput(serviceName, taskDefName string) (*ecs
 		createServiceInput.LaunchType = aws.String(launchType)
 	}
 
+	if s.daemon {
+		createServiceInput.SetSchedulingStrategy(ecs.SchedulingStrategyDaemon)
+		createServiceInput.DesiredCount = nil // DesiredCount not compatible with DAEMON
+	}
+
 	if err = createServiceInput.Validate(); err != nil {
 		return nil, err
 	}
@@ -518,7 +527,7 @@ func (s *Service) updateService(count int64) error {
 		return err
 	}
 
-	if err = s.Context().ECSClient.UpdateService(serviceName, "", count, deploymentConfig, networkConfig, s.healthCheckGP, forceDeployment); err != nil {
+	if err = s.Context().ECSClient.UpdateService(serviceName, "", count, deploymentConfig, networkConfig, s.healthCheckGP, s.daemon, forceDeployment); err != nil {
 		return err
 	}
 
